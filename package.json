@@ -2,6 +2,9 @@
   "name": "rsvp-reader",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=18"
+  },
   "workspaces": [
     "packages/core",
     "packages/web",
@@ -10,6 +13,7 @@
     "server"
   ],
   "scripts": {
+    "start": "concurrently --names \"web,server\" --prefix-colors \"cyan,yellow\" \"npm run dev\" \"npm run dev:server\"",
     "dev": "npm run dev --workspace=packages/web",
     "dev:server": "npm run dev --workspace=server",
     "dev:mcp": "npm run start --workspace=packages/mcp-server",
@@ -23,6 +27,7 @@
     "typecheck": "npm run build:core && tsc --noEmit --project packages/web/tsconfig.json && tsc --noEmit --project packages/mcp-server/tsconfig.json"
   },
   "devDependencies": {
-    "@playwright/test": "^1.59.1"
+    "@playwright/test": "^1.59.1",
+    "concurrently": "^9.2.1"
   }
 }

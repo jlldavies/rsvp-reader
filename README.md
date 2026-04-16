@@ -1,123 +1,81 @@
 # RSVP Speed Reader
 
-A fast, full-featured speed-reading web app using Rapid Serial Visual Presentation (RSVP). Words flash one at a time with the Optimal Recognition Point (ORP) highlighted in red, letting you read 2–3× faster with practice.
+Speed-read anything — articles, PDFs, research papers, Word docs — at 2–3× your normal pace. Words flash one at a time with the key letter highlighted in red (the Optimal Recognition Point), trained to land your eye in the right place every time.
 
-![RSVP Speed Reader](https://img.shields.io/badge/TypeScript-5.x-blue) ![React](https://img.shields.io/badge/React-18-blue) ![License](https://img.shields.io/badge/license-MIT-green)
-
-## Features
-
-- **Multiple import formats** — paste text, fetch a URL, or upload PDF, Word (.docx), PowerPoint (.pptx), Markdown, or plain text
-- **ORP highlighting** — the key recognition letter is highlighted in red, aligned consistently across all words
-- **Adjustable speed** — 50–1,500 WPM with a live slider
-- **Words per flash** — show 1, 2, or 3 words at once (configure in Settings)
-- **Full-text preview** — scrollable panel shows all text; current word is highlighted in amber; click any word to jump there
-- **Section breaks** — headings in Markdown/Word docs create natural pause points
-- **Bookmarks** — save named positions in any document; multiple bookmarks per document
-- **Reading history** — all previously read documents stored locally; resume from where you left off
-- **Settings persistence** — WPM, font, font size, colours, and pause behaviour survive page reloads
-- **Keyboard shortcuts** — `Space` play/pause · `↑↓` WPM · `←→` skip sentence
-- **AI summarisation** *(optional)* — summarise long documents with Claude before reading, requires an Anthropic API key
-- **Chrome extension** — speed-read any web page via a popup overlay *(see `packages/extension/`)*
-- **MCP server** — use from Claude Code via `speed_read` tool *(see `packages/mcp-server/`)*
+**This is a local tool. Clone it, run it, use it.**
 
 ## Quick start
 
-### Prerequisites
-
-- Node.js 18+
-- npm 9+
-
-### Install
-
 ```bash
-git clone https://github.com/YOUR_USERNAME/rsvp-reader.git
+git clone https://github.com/jlldavies/rsvp-reader.git
 cd rsvp-reader
 npm install
+npm start
 ```
 
-### Run
+Open **http://localhost:3000**.
 
-You need two terminal windows:
+`npm start` runs both servers at once. Paste text and start reading immediately — no further setup needed.
 
-**Terminal 1 — web app** (port 3000):
+## Requirements
+
+- **Node.js 18+** — check with `node --version`  
+  Install via [nvm](https://github.com/nvm-sh/nvm): `nvm use` (reads `.nvmrc` automatically)
+
+## What you can read
+
+| Source | How | Needs server? |
+|---|---|---|
+| Pasted text | Paste tab | No |
+| Markdown (pasted) | Paste tab → Markdown | No |
+| URL (web article) | URL tab | Yes |
+| PDF | Upload File tab | Yes |
+| Word (.docx) | Upload File tab | Yes |
+| PowerPoint (.pptx) | Upload File tab | Yes |
+| Markdown file | Upload File tab | Yes |
+
+The web app alone (no server) works for pasted text. The server is only needed for file upload and URL fetch.
+
+## Features
+
+- **ORP highlighting** — key letter in red, aligned consistently across every word
+- **Adjustable speed** — 50–1,500 WPM via slider or ↑↓ keys
+- **Words per flash** — 1, 2, or 3 words at a time (in Settings)
+- **Full-text preview** — scrollable panel below; current word highlighted; click any word to jump there
+- **Section breaks** — headings in Markdown/Word create natural pause points (Space to continue)
+- **Bookmarks** — save named positions; multiple bookmarks per document
+- **History** — all previously read documents stored locally; reopens where you left off
+- **Font choice** — IBM Plex Mono (default, research-backed for RSVP), Roboto Mono, Space Mono, Courier Prime, Courier New
+- **Dark / Light / System theme**
+- **Keyboard shortcuts** — `Space` play/pause · `↑↓` WPM · `←→` skip
+
+## AI summarisation (optional)
+
+For documents over 3,000 words, a ✨ button appears. It uses [Claude](https://www.anthropic.com/) to produce a ~25% summary then loads it into the reader.
+
+**Setup:**
 ```bash
-npm run dev
+cp server/.env.example server/.env
+# Add your key to server/.env:
+# ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-**Terminal 2 — parse server** (port 3847, required for PDF/URL/file imports):
-```bash
-npm run dev:server
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-> Paste text works without the server. The server is only needed for file upload, URL fetch, and AI summarisation.
-
-## AI Summarisation (optional)
-
-For documents over 3,000 words a ✨ button appears in the top bar. It calls [Claude](https://www.anthropic.com/) to produce a concise summary (~20–30% of the original length) which is then loaded into the reader.
-
-### Setup
-
-1. Copy the example env file:
-   ```bash
-   cp server/.env.example server/.env
-   ```
-
-2. Add your Anthropic API key to `server/.env`:
-   ```
-   ANTHROPIC_API_KEY=sk-ant-...
-   ```
-   Get a key at [console.anthropic.com](https://console.anthropic.com/).
-
-3. Restart the parse server (`npm run dev:server`).
-
-The ✨ button will show a clear error message if the key is missing or invalid — it does not affect any other feature.
-
-> `server/.env` is listed in `.gitignore` and will never be committed.
-
-## Environment variables
-
-| Variable | Where | Default | Description |
-|---|---|---|---|
-| `ANTHROPIC_API_KEY` | `server/.env` | *(none)* | Enables AI summarisation. Optional. |
-| `PORT` | `server/.env` | `3847` | Parse/summarise server port. |
-
-## Project structure
-
-```
-rsvp-reader/
-├── packages/
-│   ├── core/          # RSVP engine, parsers, types (shared)
-│   ├── web/           # React web app (Vite)
-│   ├── extension/     # Chrome extension (Manifest V3)
-│   └── mcp-server/    # MCP server for Claude Code
-├── server/            # Express backend (PDF/URL/DOCX parsing + summarisation)
-├── e2e/               # Playwright end-to-end tests
-└── README.md
-```
-
-## Running tests
-
-Unit tests:
-```bash
-npm test
-```
-
-End-to-end tests (requires both servers running):
-```bash
-npx playwright test
-```
+Get a key at [console.anthropic.com](https://console.anthropic.com/). If the key is absent the button shows a clear message and everything else keeps working.
 
 ## Chrome extension
+
+Lets you speed-read any web page without leaving the browser.
 
 ```bash
 npm run build:extension
 ```
 
-Load `packages/extension/dist/` as an unpacked extension in Chrome (`chrome://extensions` → Developer mode → Load unpacked).
+Load `packages/extension/dist/` as an unpacked extension:  
+Chrome → `chrome://extensions` → Developer mode → Load unpacked
 
-## MCP server (Claude Code integration)
+## Claude Code / MCP integration
+
+Use the `speed_read` tool directly from Claude Code.
 
 ```bash
 npm run build:mcp
@@ -135,22 +93,24 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-Then from Claude Code: `speed_read https://example.com/article`
+Then in Claude Code:
+```
+speed_read https://example.com/article
+speed_read /path/to/paper.pdf
+```
 
-## Tech stack
+## Individual commands
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 18, TypeScript, Vite, Zustand |
-| Backend | Express, Node.js, TypeScript |
-| Parsers | pdfjs-dist, mammoth, jszip, @mozilla/readability |
-| AI | Anthropic Claude (via @anthropic-ai/sdk) |
-| Testing | Vitest, Playwright |
-| Fonts | IBM Plex Mono (default), Roboto Mono, Space Mono, Courier Prime |
+```bash
+npm run dev          # web app only (port 3000)
+npm run dev:server   # parse server only (port 3847)
+npm test             # unit tests (all workspaces)
+npx playwright test  # E2E tests (requires both servers running)
+```
 
-## Contributing
+## Tech
 
-Pull requests welcome. Please run `npm test` and `npx playwright test` before submitting.
+React · TypeScript · Vite · Zustand · Express · pdfjs-dist · mammoth · @mozilla/readability · Playwright
 
 ## License
 
