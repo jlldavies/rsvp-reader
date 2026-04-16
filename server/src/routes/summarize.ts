@@ -8,6 +8,10 @@ summarizeRouter.post('/summarize', async (req, res) => {
     res.status(400).json({ error: 'No text provided' });
     return;
   }
+  if (text.length > 200_000) {
+    res.status(413).json({ error: 'Document too large to summarise (max 200,000 characters).' });
+    return;
+  }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {

@@ -36,13 +36,13 @@ const styles: Record<string, React.CSSProperties> = {
   track: {
     width: '100%',
     height: 4,
-    background: '#e0e0e0',
+    background: 'var(--color-border)',
     borderRadius: 2,
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
-    background: '#2563eb',
+    background: 'var(--color-accent)',
     borderRadius: 2,
     transition: 'width 0.1s linear',
   },

@@ -7,7 +7,7 @@ export interface ReaderSettings {
   backgroundColor: string;
   sectionPauseMode: 'timed' | 'manual';
   paragraphPauseMode: 'timed' | 'manual';
-  theme: 'light' | 'dark';
+  theme: 'light' | 'dark' | 'system';
   punctuationPauseMultiplier: number;
   longWordPauseMultiplier: number;
   font: string;
@@ -23,7 +23,7 @@ export const DEFAULT_SETTINGS: ReaderSettings = {
   backgroundColor: '#fafafa',
   sectionPauseMode: 'manual',
   paragraphPauseMode: 'timed',
-  theme: 'light',
+  theme: 'system',
   punctuationPauseMultiplier: 1.5,
   longWordPauseMultiplier: 1.2,
   font: "'IBM Plex Mono', 'Roboto Mono', Courier, monospace",

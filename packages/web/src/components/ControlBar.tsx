@@ -56,8 +56,9 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 12,
     padding: '16px 20px',
-    borderTop: '1px solid #e0e0e0',
-    background: '#fafafa',
+    borderTop: '1px solid var(--color-border)',
+    background: 'var(--color-bg-secondary)',
+    color: 'var(--color-text)',
   },
   row: {
     display: 'flex',
@@ -67,10 +68,11 @@ const styles: Record<string, React.CSSProperties> = {
   btn: {
     fontSize: 20,
     background: 'none',
-    border: '1px solid #ccc',
+    border: '1px solid var(--color-btn-border)',
     borderRadius: 8,
     padding: '6px 14px',
     cursor: 'pointer',
+    color: 'var(--color-text)',
   },
   playBtn: {
     fontSize: 24,
@@ -83,7 +85,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   label: {
     fontSize: 14,
-    color: '#555',
+    color: 'var(--color-text-subtle)',
     display: 'flex',
     alignItems: 'center',
     gap: 8,

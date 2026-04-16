@@ -12,22 +12,12 @@ export const TextPreview: React.FC<TextPreviewProps> = ({
   currentTokenIndex,
   onSeek,
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
   const highlightRef = useRef<HTMLSpanElement>(null);
 
   // Auto-scroll to keep current token in view
   useEffect(() => {
-    if (highlightRef.current && containerRef.current) {
-      const container = containerRef.current;
-      const el = highlightRef.current;
-      const elTop = el.offsetTop;
-      const elBottom = elTop + el.offsetHeight;
-      const scrollTop = container.scrollTop;
-      const containerHeight = container.clientHeight;
-      // Keep highlighted word in the middle third of the visible area
-      if (elTop < scrollTop + containerHeight * 0.2 || elBottom > scrollTop + containerHeight * 0.8) {
-        container.scrollTop = elTop - containerHeight * 0.4;
-      }
+    if (highlightRef.current) {
+      highlightRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   }, [currentTokenIndex]);
 
@@ -35,7 +25,6 @@ export const TextPreview: React.FC<TextPreviewProps> = ({
 
   return (
     <div
-      ref={containerRef}
       style={styles.container}
       data-testid="text-preview"
     >
@@ -81,12 +70,12 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     height: 220,
     overflowY: 'auto',
-    borderTop: '1px solid #e0e0e0',
+    borderTop: '1px solid var(--color-border)',
     padding: '12px 20px',
-    background: '#fafafa',
+    background: 'var(--color-bg-secondary)',
     fontSize: 13,
     lineHeight: 1.7,
-    color: '#444',
+    color: 'var(--color-text)',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
   section: {
@@ -95,10 +84,10 @@ const styles: Record<string, React.CSSProperties> = {
   heading: {
     fontWeight: 700,
     fontSize: 14,
-    color: '#222',
+    color: 'var(--color-text)',
     marginBottom: 8,
     paddingBottom: 4,
-    borderBottom: '1px solid #e8e8e8',
+    borderBottom: '1px solid var(--color-border-light)',
   },
   paragraph: {
     whiteSpace: 'pre-wrap',
@@ -111,14 +100,14 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'background 0.1s',
   },
   tokenCurrent: {
-    background: '#fef3c7',
-    color: '#92400e',
+    background: 'var(--color-preview-current-bg)',
+    color: 'var(--color-preview-current-text)',
     fontWeight: 600,
-    outline: '1px solid #f59e0b',
+    outline: '1px solid var(--color-preview-current-border)',
     borderRadius: 3,
   },
   tokenPast: {
-    color: '#9ca3af',
+    color: 'var(--color-preview-past)',
   },
   paraBreak: {
     display: 'block',

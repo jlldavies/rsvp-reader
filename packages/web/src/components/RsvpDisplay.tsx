@@ -82,6 +82,7 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
     padding: '40px 20px',
     userSelect: 'none',
+    background: 'var(--color-bg)',
   },
   prefix: {
     textAlign: 'right',
@@ -100,12 +101,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
   guideMark: {
     fontSize: 12,
-    color: '#ccc',
+    color: 'var(--color-text-muted)',
     marginLeft: 180, // aligns with ORP position
   },
   placeholder: {
     fontSize: 18,
-    color: '#999',
+    color: 'var(--color-text-muted)',
     fontStyle: 'italic',
   },
   sectionBreak: {
@@ -116,10 +117,10 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 28,
     fontWeight: 600,
     marginBottom: 16,
-    color: '#333',
+    color: 'var(--color-text)',
   },
   sectionHint: {
     fontSize: 16,
-    color: '#888',
+    color: 'var(--color-text-muted)',
   },
 };

@@ -98,9 +98,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         <select
           id="theme-select"
           value={settings.theme}
-          onChange={(e) => onSettingChange('theme', e.target.value as 'light' | 'dark')}
+          onChange={(e) => onSettingChange('theme', e.target.value as 'light' | 'dark' | 'system')}
           style={styles.select}
         >
+          <option value="system">System</option>
           <option value="light">Light</option>
           <option value="dark">Dark</option>
         </select>
@@ -139,11 +140,14 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: 12,
     minWidth: 260,
+    background: 'var(--color-bg-secondary)',
+    color: 'var(--color-text)',
   },
   heading: {
     margin: 0,
     fontSize: 16,
     fontWeight: 600,
+    color: 'var(--color-text)',
   },
   row: {
     display: 'flex',
@@ -154,13 +158,16 @@ const styles: Record<string, React.CSSProperties> = {
   label: {
     fontSize: 14,
     flex: 1,
+    color: 'var(--color-text-subtle)',
   },
   input: {
     width: 80,
     padding: '4px 8px',
     fontSize: 14,
-    border: '1px solid #ccc',
+    border: '1px solid var(--color-btn-border)',
     borderRadius: 4,
+    background: 'var(--color-bg-input)',
+    color: 'var(--color-text)',
   },
   colorInput: {
     width: 40,
@@ -172,8 +179,10 @@ const styles: Record<string, React.CSSProperties> = {
   select: {
     padding: '4px 8px',
     fontSize: 14,
-    border: '1px solid #ccc',
+    border: '1px solid var(--color-btn-border)',
     borderRadius: 4,
+    background: 'var(--color-bg-input)',
+    color: 'var(--color-text)',
   },
   buttonGroup: {
     display: 'flex',
@@ -182,11 +191,12 @@ const styles: Record<string, React.CSSProperties> = {
   chunkBtn: {
     width: 36,
     height: 32,
-    border: '1px solid #ccc',
+    border: '1px solid var(--color-btn-border)',
     borderRadius: 4,
-    background: '#fff',
+    background: 'var(--color-btn-bg)',
     cursor: 'pointer',
     fontSize: 14,
+    color: 'var(--color-text)',
   },
   chunkBtnActive: {
     background: '#2563eb',
@@ -196,9 +206,10 @@ const styles: Record<string, React.CSSProperties> = {
   resetBtn: {
     padding: '6px 14px',
     fontSize: 13,
-    border: '1px solid #ccc',
+    border: '1px solid var(--color-btn-border)',
     borderRadius: 4,
-    background: '#f5f5f5',
+    background: 'var(--color-bg-secondary)',
     cursor: 'pointer',
+    color: 'var(--color-text)',
   },
 };

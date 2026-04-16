@@ -6,6 +6,7 @@ import { useRsvpPlayer } from './hooks/useRsvpPlayer';
 import { useKeyboard } from './hooks/useKeyboard';
 import { useBookmarks } from './hooks/useBookmarks';
 import { useSettings } from './hooks/useSettings';
+import { useTheme } from './hooks/useTheme';
 import { useMcpDoc } from './hooks/useMcpDoc';
 import { RsvpDisplay } from './components/RsvpDisplay';
 import { ControlBar } from './components/ControlBar';
@@ -23,6 +24,7 @@ export const App: React.FC = () => {
   const { document, engineState, progress } = useReaderStore();
   const player = useRsvpPlayer();
   const { settings, updateSetting, resetSettings } = useSettings();
+  useTheme();
   const bookmarks = useBookmarks();
   const [activePanel, setActivePanel] = useState<Panel>('none');
   const [summarizing, setSummarizing] = useState(false);
@@ -279,13 +281,15 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    background: 'var(--color-bg)',
   },
   topBar: {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
     padding: '10px 16px',
-    borderBottom: '1px solid #e0e0e0',
+    borderBottom: '1px solid var(--color-border)',
+    background: 'var(--color-bg)',
   },
   docTitle: {
     flex: 1,
@@ -297,22 +301,23 @@ const styles: Record<string, React.CSSProperties> = {
   },
   wordCount: {
     fontSize: 12,
-    color: '#888',
+    color: 'var(--color-text-muted)',
     flexShrink: 0,
   },
   iconBtn: {
     fontSize: 14,
     background: 'none',
-    border: '1px solid #ccc',
+    border: '1px solid var(--color-btn-border)',
     borderRadius: 6,
     padding: '4px 10px',
     cursor: 'pointer',
     flexShrink: 0,
+    color: 'var(--color-text)',
   },
   iconBtnActive: {
-    background: '#eff6ff',
-    borderColor: '#2563eb',
-    color: '#2563eb',
+    background: 'var(--color-accent-bg)',
+    borderColor: 'var(--color-accent)',
+    color: 'var(--color-accent-text)',
   },
   errorBanner: {
     display: 'flex',
@@ -320,16 +325,16 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     gap: 8,
     padding: '8px 16px',
-    background: '#fff7ed',
-    borderBottom: '1px solid #fed7aa',
-    color: '#c2410c',
+    background: 'var(--color-warn-bg)',
+    borderBottom: '1px solid var(--color-warn-border)',
+    color: 'var(--color-warn-text)',
     fontSize: 13,
   },
   errorDismiss: {
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    color: '#c2410c',
+    color: 'var(--color-warn-text)',
     fontSize: 14,
     padding: '0 4px',
     flexShrink: 0,
@@ -339,14 +344,14 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'not-allowed',
   },
   panel: {
-    borderBottom: '1px solid #e0e0e0',
-    background: '#fafafa',
+    borderBottom: '1px solid var(--color-border)',
+    background: 'var(--color-bg-secondary)',
   },
   finished: {
     textAlign: 'center',
     padding: 20,
     fontSize: 18,
-    color: '#2563eb',
+    color: 'var(--color-accent-text)',
     fontWeight: 600,
   },
   loading: {
@@ -355,6 +360,6 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
     minHeight: '100vh',
     fontSize: 18,
-    color: '#666',
+    color: 'var(--color-text-muted)',
   },
 };

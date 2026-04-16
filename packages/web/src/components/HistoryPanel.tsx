@@ -96,6 +96,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '12px 16px',
     maxHeight: 400,
     overflowY: 'auto',
+    background: 'var(--color-bg-secondary)',
+    color: 'var(--color-text)',
   },
   headerRow: {
     display: 'flex',
@@ -106,23 +108,24 @@ const styles: Record<string, React.CSSProperties> = {
   heading: {
     fontWeight: 600,
     fontSize: 15,
+    color: 'var(--color-text)',
   },
   empty: {
-    color: '#888',
+    color: 'var(--color-text-muted)',
     fontSize: 14,
     padding: '8px 0',
   },
   clearBtn: {
     fontSize: 12,
     padding: '3px 10px',
-    border: '1px solid #fca5a5',
+    border: '1px solid var(--color-error-border)',
     borderRadius: 4,
-    background: '#fff',
-    color: '#dc2626',
+    background: 'var(--color-btn-bg)',
+    color: 'var(--color-error-text)',
     cursor: 'pointer',
   },
   entry: {
-    borderBottom: '1px solid #f0f0f0',
+    borderBottom: '1px solid var(--color-border-light)',
     paddingBottom: 8,
     marginBottom: 8,
   },
@@ -145,10 +148,11 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    color: 'var(--color-text)',
   },
   entryMeta: {
     fontSize: 11,
-    color: '#888',
+    color: 'var(--color-text-muted)',
   },
   entryActions: {
     display: 'flex',
@@ -168,19 +172,19 @@ const styles: Record<string, React.CSSProperties> = {
   expandBtn: {
     fontSize: 11,
     padding: '3px 8px',
-    border: '1px solid #ccc',
+    border: '1px solid var(--color-btn-border)',
     borderRadius: 4,
-    background: '#fff',
+    background: 'var(--color-btn-bg)',
     cursor: 'pointer',
-    color: '#555',
+    color: 'var(--color-text-subtle)',
   },
   removeBtn: {
     fontSize: 12,
     padding: '3px 7px',
-    border: '1px solid #ccc',
+    border: '1px solid var(--color-btn-border)',
     borderRadius: 4,
-    background: '#fff',
-    color: '#888',
+    background: 'var(--color-btn-bg)',
+    color: 'var(--color-text-muted)',
     cursor: 'pointer',
   },
   bookmarkList: {
@@ -192,7 +196,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   noBookmarks: {
     fontSize: 12,
-    color: '#aaa',
+    color: 'var(--color-text-muted)',
     fontStyle: 'italic',
   },
   bookmark: {
@@ -203,18 +207,19 @@ const styles: Record<string, React.CSSProperties> = {
   },
   bookmarkLabel: {
     flex: 1,
-    color: '#333',
+    color: 'var(--color-text)',
   },
   bookmarkMeta: {
-    color: '#888',
+    color: 'var(--color-text-muted)',
     fontSize: 11,
   },
   jumpBtn: {
     fontSize: 11,
     padding: '2px 8px',
-    border: '1px solid #ccc',
+    border: '1px solid var(--color-btn-border)',
     borderRadius: 4,
-    background: '#fff',
+    background: 'var(--color-btn-bg)',
     cursor: 'pointer',
+    color: 'var(--color-text)',
   },
 };
