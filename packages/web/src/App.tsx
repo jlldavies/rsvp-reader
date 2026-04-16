@@ -27,8 +27,18 @@ export const App: React.FC = () => {
   useTheme();
   const bookmarks = useBookmarks();
   const [activePanel, setActivePanel] = useState<Panel>('none');
+  const [showImportHistory, setShowImportHistory] = useState(false);
   const [summarizing, setSummarizing] = useState(false);
   const [summarizeError, setSummarizeError] = useState<string | null>(null);
+
+  const cycleTheme = useCallback(() => {
+    const order = ['system', 'light', 'dark'] as const;
+    const next = order[(order.indexOf(settings.theme) + 1) % order.length];
+    updateSetting('theme', next);
+  }, [settings.theme, updateSetting]);
+
+  const themeIcon = settings.theme === 'dark' ? '🌙' : settings.theme === 'light' ? '☀️' : '💻';
+  const themeLabel = `Theme: ${settings.theme} (click to cycle)`;
   const mcpDoc = useMcpDoc();
 
   // Keep store settings in sync with persisted settings
@@ -150,7 +160,42 @@ export const App: React.FC = () => {
   }
 
   if (!document) {
-    return <DocumentImport onDocumentLoaded={handleDocumentLoaded} />;
+    return (
+      <div style={{ position: 'relative' }}>
+        {/* Theme + history controls floating top-right */}
+        <div style={styles.importControls}>
+          <button style={styles.importIconBtn} onClick={cycleTheme} title={themeLabel}>
+            {themeIcon}
+          </button>
+          <button
+            style={{ ...styles.importIconBtn, ...(showImportHistory ? styles.importIconBtnActive : {}) }}
+            onClick={() => setShowImportHistory(v => !v)}
+            title="Recent documents"
+          >
+            📚
+          </button>
+        </div>
+
+        {/* History dropdown */}
+        {showImportHistory && (
+          <div style={styles.importHistoryDropdown}>
+            <HistoryPanel
+              history={bookmarks.getAllHistory()}
+              onOpen={(doc) => { handleDocumentLoaded(doc); setShowImportHistory(false); }}
+              onJumpToBookmark={(doc, bm) => {
+                handleDocumentLoaded(doc);
+                setTimeout(() => player.seekTo(bm.tokenIndex), 200);
+                setShowImportHistory(false);
+              }}
+              onRemove={bookmarks.removeFromHistory}
+              onClearAll={bookmarks.clearHistory}
+            />
+          </div>
+        )}
+
+        <DocumentImport onDocumentLoaded={handleDocumentLoaded} />
+      </div>
+    );
   }
 
   const currentTokenIndex = Math.round(progress * document.totalWords);
@@ -274,6 +319,40 @@ export const App: React.FC = () => {
 };
 
 const styles: Record<string, React.CSSProperties> = {
+  importControls: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    display: 'flex',
+    gap: 8,
+    zIndex: 10,
+  },
+  importIconBtn: {
+    fontSize: 18,
+    background: 'var(--color-bg)',
+    border: '1px solid var(--color-btn-border)',
+    borderRadius: 8,
+    padding: '6px 10px',
+    cursor: 'pointer',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+  },
+  importIconBtnActive: {
+    background: 'var(--color-accent-bg)',
+    borderColor: 'var(--color-accent)',
+  },
+  importHistoryDropdown: {
+    position: 'absolute',
+    top: 60,
+    right: 16,
+    width: 420,
+    maxWidth: 'calc(100vw - 32px)',
+    background: 'var(--color-bg)',
+    border: '1px solid var(--color-border)',
+    borderRadius: 12,
+    boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+    zIndex: 20,
+    overflow: 'hidden',
+  },
   container: {
     maxWidth: 800,
     margin: '0 auto',
