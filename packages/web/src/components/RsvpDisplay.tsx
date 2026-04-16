@@ -33,41 +33,45 @@ export const RsvpDisplay: React.FC = () => {
   const orp = text[orpIndex] || '';
   const suffix = text.slice(orpIndex + 1);
 
-  const wordContainerStyle: React.CSSProperties = {
+  // Shared row layout: prefix [flex:1 right-aligned] | ORP [fixed 1ch] | suffix [flex:1 left-aligned]
+  // This guarantees ORP is always at the horizontal midpoint regardless of word length.
+  const rowStyle: React.CSSProperties = {
     display: 'flex',
+    width: '100%',
+    maxWidth: 720,
     alignItems: 'baseline',
     fontFamily: settings.font,
     fontSize: settings.fontSize,
     fontWeight: 400,
     lineHeight: 1.2,
-    whiteSpace: 'pre',
-  };
-
-  const orpStyle: React.CSSProperties = {
-    display: 'inline-block',
-    minWidth: '0.6em',
-    textAlign: 'center',
-    color: settings.orpColor,
   };
 
   return (
     <div style={styles.container}>
-      <div style={styles.guides}>
+      {/* Guide arrow — mirrors the word row layout so it stays above the ORP */}
+      <div style={{ ...rowStyle, fontSize: 12, lineHeight: 1 }}>
+        <div style={{ flex: 1 }} />
         <div style={styles.guideMark}>&#x25BC;</div>
+        <div style={{ flex: 1 }} />
       </div>
-      <div style={wordContainerStyle}>
+
+      <div style={rowStyle}>
         <span style={{ ...styles.prefix, color: settings.prefixColor }}>
           {prefix}
         </span>
-        <span style={orpStyle}>
+        <span style={{ ...styles.orp, color: settings.orpColor }}>
           {orp}
         </span>
         <span style={{ ...styles.suffix, color: settings.suffixColor }}>
           {suffix}
         </span>
       </div>
-      <div style={styles.guides}>
+
+      {/* Guide arrow below */}
+      <div style={{ ...rowStyle, fontSize: 12, lineHeight: 1 }}>
+        <div style={{ flex: 1 }} />
         <div style={styles.guideMark}>&#x25B2;</div>
+        <div style={{ flex: 1 }} />
       </div>
     </div>
   );
@@ -85,24 +89,29 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--color-bg)',
   },
   prefix: {
+    flex: 1,
     textAlign: 'right',
-    minWidth: 180,
-    display: 'inline-block',
+    minWidth: 0,
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+  },
+  orp: {
+    flexShrink: 0,
+    width: '1ch',
+    textAlign: 'center',
   },
   suffix: {
+    flex: 1,
     textAlign: 'left',
-    minWidth: 180,
-    display: 'inline-block',
-  },
-  guides: {
-    display: 'flex',
-    justifyContent: 'center',
-    width: '100%',
+    minWidth: 0,
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
   },
   guideMark: {
-    fontSize: 12,
+    width: '1ch',
+    textAlign: 'center',
     color: 'var(--color-text-muted)',
-    marginLeft: 180, // aligns with ORP position
+    flexShrink: 0,
   },
   placeholder: {
     fontSize: 18,
