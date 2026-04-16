@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.js.map
+coverage/
+
+# Environment variables — never commit these
+.env
+.env.local
+.env.*.local
+server/.env
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/settings.json
+.idea/
+
+# Test results
+test-results/
+playwright-report/
+
+# Logs
+*.log
+npm-debug.log*

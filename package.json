@@ -1,0 +1,28 @@
+{
+  "name": "rsvp-reader",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/core",
+    "packages/web",
+    "packages/extension",
+    "packages/mcp-server",
+    "server"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=packages/web",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:mcp": "npm run start --workspace=packages/mcp-server",
+    "build": "npm run build:core && npm run build:server && npm run build:web && npm run build:extension && npm run build:mcp",
+    "build:core": "npm run build --workspace=packages/core",
+    "build:server": "npm run build --workspace=server",
+    "build:web": "npm run build --workspace=packages/web",
+    "build:extension": "npm run build --workspace=packages/extension",
+    "build:mcp": "npm run build --workspace=packages/mcp-server",
+    "test": "npm test --workspaces",
+    "typecheck": "npm run build:core && tsc --noEmit --project packages/web/tsconfig.json && tsc --noEmit --project packages/mcp-server/tsconfig.json"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}
