@@ -46,12 +46,14 @@ export const App: React.FC = () => {
     useReaderStore.getState().updateSettings(settings);
   }, [settings]);
 
-  // Auto-load document when opened via MCP
+  // Auto-load document when opened via MCP or extension
   useEffect(() => {
     if (mcpDoc.doc && !document) {
       if (mcpDoc.wpm !== settings.wpm) updateSetting('wpm', mcpDoc.wpm);
       if (mcpDoc.chunkSize !== settings.chunkSize) updateSetting('chunkSize', mcpDoc.chunkSize);
-      player.loadDocument(mcpDoc.doc);
+      bookmarks.saveToHistory(mcpDoc.doc);
+      const lastPos = bookmarks.getLastPosition(mcpDoc.doc.id);
+      player.loadDocument(mcpDoc.doc, lastPos ?? undefined);
       player.play();
     }
   // Only run once when mcpDoc resolves
@@ -61,8 +63,8 @@ export const App: React.FC = () => {
   useKeyboard({
     toggle: player.toggle,
     continueReading: player.continueReading,
-    skipForward: player.skipForward,
-    skipBackward: player.skipBackward,
+    seekSentenceBack: player.seekSentenceBack,
+    seekForwardSmart: player.seekForwardSmart,
   });
 
   const handleDocumentLoaded = useCallback(
@@ -354,7 +356,7 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
   },
   container: {
-    maxWidth: 800,
+    width: '100%',
     margin: '0 auto',
     height: '100vh',
     display: 'flex',

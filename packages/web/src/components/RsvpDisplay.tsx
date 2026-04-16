@@ -1,4 +1,5 @@
 import React from 'react';
+import { calculateOrp } from '@rsvp-reader/core';
 import { useReaderStore } from '../stores/reader-store';
 
 export const RsvpDisplay: React.FC = () => {
@@ -29,50 +30,89 @@ export const RsvpDisplay: React.FC = () => {
   }
 
   const { text, orpIndex } = currentToken;
-  const prefix = text.slice(0, orpIndex);
-  const orp = text[orpIndex] || '';
-  const suffix = text.slice(orpIndex + 1);
+  const words = text.split(' ');
+  const isMultiWord = words.length > 1;
 
-  // Shared row layout: prefix [flex:1 right-aligned] | ORP [fixed 1ch] | suffix [flex:1 left-aligned]
-  // This guarantees ORP is always at the horizontal midpoint regardless of word length.
-  const rowStyle: React.CSSProperties = {
-    display: 'flex',
-    width: '100%',
-    maxWidth: 720,
-    alignItems: 'baseline',
+  const fontStyle: React.CSSProperties = {
     fontFamily: settings.font,
     fontSize: settings.fontSize,
     fontWeight: 400,
     lineHeight: 1.2,
   };
 
+  if (isMultiWord) {
+    // Multi-word: each word gets its own ORP highlight, displayed as a centred row
+    return (
+      <div style={styles.container}>
+        <div
+          key={currentToken.index}
+          className="rsvp-flash"
+          style={{ ...styles.multiWordRow, ...fontStyle }}
+        >
+          {words.map((word, i) => {
+            const oi = calculateOrp(word);
+            const wp = word.slice(0, oi);
+            const wo = word[oi] ?? '';
+            const ws = word.slice(oi + 1);
+            return (
+              <React.Fragment key={i}>
+                {i > 0 && <span>&nbsp;</span>}
+                <span style={styles.wordGroup}>
+                  <span style={{ color: 'var(--color-word-prefix)' }}>{wp}</span>
+                  <span style={{ color: settings.orpColor }}>{wo}</span>
+                  <span style={{ color: 'var(--color-word-suffix)' }}>{ws}</span>
+                </span>
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Single word: ORP pinned at ~33% from left (flex 1:2 split).
+  // Words typically have more text after the ORP than before, so the right
+  // zone is given twice the space. This matches the research recommendation
+  // of placing the ORP ~35% from the word's left edge.
+  const prefix = text.slice(0, orpIndex);
+  const orp = text[orpIndex] || '';
+  const suffix = text.slice(orpIndex + 1);
+
+  // Row layout: [prefix flex:1 right-aligned] [ORP 1ch] [suffix flex:2 left-aligned]
+  const rowStyle: React.CSSProperties = {
+    display: 'flex',
+    width: '100%',
+    alignItems: 'baseline',
+    ...fontStyle,
+  };
+
+  // Reticle lines: thin horizontal guides on either side of the ORP column.
+  // They use the same 1:ORP:2 column layout so they track the red letter exactly.
+  const reticleRow = (
+    <div style={{ ...rowStyle, alignItems: 'center' }}>
+      <div style={{ flex: 1, ...styles.reticleLine }} />
+      <div style={styles.reticleGap} />
+      <div style={{ flex: 2, ...styles.reticleLine }} />
+    </div>
+  );
+
   return (
     <div style={styles.container}>
-      {/* Guide arrow — mirrors the word row layout so it stays above the ORP */}
-      <div style={{ ...rowStyle, fontSize: 12, lineHeight: 1 }}>
-        <div style={{ flex: 1 }} />
-        <div style={styles.guideMark}>&#x25BC;</div>
-        <div style={{ flex: 1 }} />
-      </div>
+      {reticleRow}
 
-      <div style={rowStyle}>
-        <span style={{ ...styles.prefix, color: settings.prefixColor }}>
+      <div key={currentToken.index} className="rsvp-flash" style={rowStyle}>
+        <span style={{ ...styles.prefix, color: 'var(--color-word-prefix)' }}>
           {prefix}
         </span>
         <span style={{ ...styles.orp, color: settings.orpColor }}>
           {orp}
         </span>
-        <span style={{ ...styles.suffix, color: settings.suffixColor }}>
+        <span style={{ ...styles.suffix, color: 'var(--color-word-suffix)' }}>
           {suffix}
         </span>
       </div>
 
-      {/* Guide arrow below */}
-      <div style={{ ...rowStyle, fontSize: 12, lineHeight: 1 }}>
-        <div style={{ flex: 1 }} />
-        <div style={styles.guideMark}>&#x25B2;</div>
-        <div style={{ flex: 1 }} />
-      </div>
+      {reticleRow}
     </div>
   );
 };
@@ -88,6 +128,7 @@ const styles: Record<string, React.CSSProperties> = {
     userSelect: 'none',
     background: 'var(--color-bg)',
   },
+  // Single-word layout: prefix gets 1/3 of width, suffix 2/3
   prefix: {
     flex: 1,
     textAlign: 'right',
@@ -101,17 +142,31 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'center',
   },
   suffix: {
-    flex: 1,
+    flex: 2,
     textAlign: 'left',
     minWidth: 0,
     overflow: 'hidden',
     whiteSpace: 'nowrap',
   },
-  guideMark: {
+  reticleLine: {
+    height: 1,
+    background: 'var(--color-text-muted)',
+    opacity: 0.35,
+  },
+  reticleGap: {
     width: '1ch',
-    textAlign: 'center',
-    color: 'var(--color-text-muted)',
     flexShrink: 0,
+  },
+  // Multi-word layout: centred flex row
+  multiWordRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'baseline',
+    maxWidth: '90vw',
+  },
+  wordGroup: {
+    whiteSpace: 'nowrap',
   },
   placeholder: {
     fontSize: 18,

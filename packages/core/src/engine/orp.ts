@@ -1,10 +1,15 @@
 /**
  * Calculate the Optimal Recognition Point (ORP) for a word.
- * The ORP is the character the eye naturally fixates on.
+ * The ORP is the character the eye naturally fixates on (~35% from left).
  * Aligning the ORP at a fixed position eliminates saccadic eye movement.
+ *
+ * Punctuation is stripped before measuring so that "word," and "word" give
+ * the same ORP index, keeping the focal letter stable.
  */
 export function calculateOrp(word: string): number {
-  const len = word.length;
+  // Strip leading and trailing punctuation to measure letter-only length
+  const stripped = word.replace(/^[^a-zA-Z0-9À-ÿ]+|[^a-zA-Z0-9À-ÿ]+$/g, '');
+  const len = stripped.length || word.length;
   if (len <= 1) return 0;
   if (len <= 5) return 1;
   if (len <= 9) return 2;

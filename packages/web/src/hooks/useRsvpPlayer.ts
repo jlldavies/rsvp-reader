@@ -75,6 +75,8 @@ export function useRsvpPlayer() {
   const skipForward = useCallback(() => engine.skipForward(10), [engine]);
   const skipBackward = useCallback(() => engine.skipBackward(10), [engine]);
   const seekTo = useCallback((idx: number) => engine.seekTo(idx), [engine]);
+  const seekSentenceBack = useCallback(() => engine.seekSentenceBack(), [engine]);
+  const seekForwardSmart = useCallback(() => engine.seekForwardSmart(), [engine]);
 
   return {
     loadDocument,
@@ -85,5 +87,7 @@ export function useRsvpPlayer() {
     skipForward,
     skipBackward,
     seekTo,
+    seekSentenceBack,
+    seekForwardSmart,
   };
 }

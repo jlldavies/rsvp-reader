@@ -161,6 +161,90 @@ export class RsvpEngine {
     if (wasPlaying) this.scheduleNext();
   }
 
+  /**
+   * Step back one sentence boundary from the current position.
+   * Each successive call continues stepping back, so rapid presses
+   * keep rewinding sentence by sentence.
+   */
+  seekSentenceBack(): void {
+    const wasPlaying = this.state === 'playing';
+    this.clearTimer();
+
+    // Start just before current token.
+    let idx = this.currentIndex - 1;
+
+    // If we landed right on a sentence-end (i.e. we ARE at a sentence start),
+    // skip it so we cross into the previous sentence.
+    if (idx >= 0 && this.isSentenceEnd(this.flatTokens[idx])) {
+      idx--;
+    }
+
+    // Walk back until we hit another sentence-end or the very start.
+    while (idx >= 0 && !this.isSentenceEnd(this.flatTokens[idx])) {
+      idx--;
+    }
+
+    // idx points to the sentence-end token (or -1); jump to the token after it.
+    this.currentIndex = Math.max(0, idx + 1);
+    this.emitToken();
+    if (wasPlaying) this.scheduleNext();
+  }
+
+  /**
+   * Smart forward skip.
+   * - If the content ahead looks tabular (table / data block), jumps past the
+   *   whole block to the next section or prose region.
+   * - Otherwise skips to the start of the next sentence.
+   */
+  seekForwardSmart(): void {
+    const wasPlaying = this.state === 'playing';
+    this.clearTimer();
+
+    let idx = this.currentIndex;
+
+    if (this.isContextTabularAt(idx)) {
+      // Skip tokens until we leave the tabular region or hit a section end.
+      while (idx < this.flatTokens.length - 1) {
+        const t = this.flatTokens[idx];
+        idx++;
+        if (t.isSectionEnd) break;
+        // Stop once the upcoming tokens no longer look tabular.
+        if (idx - this.currentIndex > 6 && !this.isContextTabularAt(idx)) break;
+      }
+    } else {
+      // Skip to the end of the current sentence, then move past it.
+      while (idx < this.flatTokens.length - 1) {
+        const t = this.flatTokens[idx];
+        idx++;
+        if (this.isSentenceEnd(t)) break;
+      }
+    }
+
+    this.currentIndex = idx;
+    this.emitToken();
+    if (wasPlaying) this.scheduleNext();
+  }
+
+  private isSentenceEnd(token: RsvpToken): boolean {
+    if (token.isParagraphEnd || token.isSectionEnd) return true;
+    // Strip trailing closing punctuation/quotes before testing
+    const stripped = token.text.replace(/["')\]}>…]+$/, '');
+    return /[.!?]$/.test(stripped);
+  }
+
+  private isContextTabularAt(startIdx: number): boolean {
+    const lookahead = this.flatTokens.slice(startIdx, startIdx + 15);
+    if (lookahead.length < 3) return false;
+    // Many pipe characters → markdown/text table
+    const pipeCount = lookahead.filter((t) => t.text.includes('|')).length;
+    if (pipeCount >= 2) return true;
+    // Majority numeric/symbolic tokens → data block
+    const dataCount = lookahead.filter((t) =>
+      /^[\d,.$%+\-/:=()[\]]+$/.test(t.text)
+    ).length;
+    return dataCount / lookahead.length >= 0.5;
+  }
+
   private scheduleNext(): void {
     this.clearTimer();
     if (this.currentIndex >= this.flatTokens.length) {

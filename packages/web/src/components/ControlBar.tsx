@@ -19,13 +19,13 @@ export const ControlBar: React.FC<ControlBarProps> = ({
   return (
     <div style={styles.container}>
       <div style={styles.row}>
-        <button style={styles.btn} onClick={onSkipBackward} title="Skip back (Left arrow)" aria-label="Rewind">
+        <button style={styles.btn} onClick={onSkipBackward} title="Back sentence (Delete / Backspace)" aria-label="Rewind">
           &#x23EA;
         </button>
         <button style={styles.playBtn} onClick={onToggle} title="Play/Pause (Space)" aria-label={isPlaying ? 'Pause' : 'Play'}>
           {isPlaying ? '\u23F8' : '\u25B6'}
         </button>
-        <button style={styles.btn} onClick={onSkipForward} title="Skip forward (Right arrow)" aria-label="Skip forward">
+        <button style={styles.btn} onClick={onSkipForward} title="Skip sentence (Enter)" aria-label="Skip forward">
           &#x23E9;
         </button>
       </div>
@@ -37,10 +37,11 @@ export const ControlBar: React.FC<ControlBarProps> = ({
             type="range"
             min={50}
             max={1000}
-            step={25}
+            step={5}
             value={settings.wpm}
             onChange={(e) => updateSettings({ wpm: Number(e.target.value) })}
             style={styles.slider}
+            title="←/→ ±5  ↑/↓ ±25"
           />
         </label>
       </div>

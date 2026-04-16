@@ -3,11 +3,13 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "outDir": "./dist",
-    "rootDir": "./src",
     "declaration": false,
     "declarationMap": false,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["chrome", "vitest/globals", "@testing-library/jest-dom"]
+    "types": ["chrome", "vitest/globals", "@testing-library/jest-dom"],
+    "paths": {
+      "@rsvp-reader/web/*": ["../web/src/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "../web/src"]
 }

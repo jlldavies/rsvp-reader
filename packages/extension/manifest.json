@@ -1,13 +1,16 @@
 {
   "manifest_version": 3,
   "name": "RSVP Speed Reader",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Speed-read any webpage with RSVP (one word at a time)",
   "permissions": [
     "activeTab",
     "storage",
     "scripting"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "RSVP Speed Reader",
@@ -19,8 +22,8 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "matches": ["*://claude.ai/*"],
+      "js": ["claude-injector.js"],
       "run_at": "document_idle",
       "all_frames": false
     }

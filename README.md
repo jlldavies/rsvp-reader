@@ -1,87 +1,197 @@
 # RSVP Speed Reader
 
-Speed-read anything — articles, PDFs, research papers, Word docs — at 2–3× your normal pace. Words flash one at a time with the key letter highlighted in red (the Optimal Recognition Point), trained to land your eye in the right place every time.
+Speed-read anything — articles, PDFs, research papers, Word docs, PowerPoints — at 2-3x your normal pace. Words flash one at a time with the key letter highlighted in red (the **Optimal Recognition Point**), trained to land your eye in the right place every time.
 
-**This is a local tool. Clone it, run it, use it.**
+Works as a **web app**, **Chrome extension**, and **Claude AI tool** (MCP server).
 
-## Quick start
+---
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Web App](#web-app)
+- [Chrome Extension](#chrome-extension)
+- [Claude Code / MCP Integration](#claude-code--mcp-integration)
+- [Claude Desktop Integration](#claude-desktop-integration)
+- [Features](#features)
+- [AI Summarisation (Optional)](#ai-summarisation-optional)
+- [Architecture](#architecture)
+- [Development](#development)
+- [Troubleshooting](#troubleshooting)
+
+---
+
+## Quick Start
 
 ```bash
 git clone https://github.com/jlldavies/rsvp-reader.git
 cd rsvp-reader
 npm install
+npm run build
 npm start
 ```
 
-Open **http://localhost:3000**.
+Open **http://localhost:3847**. Paste text and start reading immediately.
 
-`npm start` runs both servers at once. Paste text and start reading immediately — no further setup needed.
+---
 
-## Requirements
+## Prerequisites
 
-- **Node.js 18+** — check with `node --version`  
-  Install via [nvm](https://github.com/nvm-sh/nvm): `nvm use` (reads `.nvmrc` automatically)
+- **Node.js 18+** — check with `node --version`
+  - Install via [nvm](https://github.com/nvm-sh/nvm): `nvm install 18 && nvm use 18`
+  - Or download from [nodejs.org](https://nodejs.org/)
+- **npm** (comes with Node.js)
+- **Google Chrome** (for the extension — optional)
+- **Claude Code CLI** or **Claude Desktop** (for MCP integration — optional)
 
-## What you can read
+---
 
-| Source | How | Needs server? |
+## Installation
+
+### For AI Agents
+
+If you are an AI agent (Claude Code, Copilot, Cursor, etc.) helping a user install this project, follow these exact steps:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/jlldavies/rsvp-reader.git
+cd rsvp-reader
+
+# 2. Install all dependencies (npm workspaces handles cross-package linking)
+npm install
+
+# 3. Build all packages in the correct order
+#    This builds: core -> server -> web -> extension -> mcp-server
+npm run build
+
+# 4. (Optional) Set up AI summarisation
+cp server/.env.example server/.env
+# Then edit server/.env and add: ANTHROPIC_API_KEY=sk-ant-...
+
+# 5. Start the app
+npm start
+```
+
+**Build order matters.** `npm run build` runs them sequentially: `core` first (shared library), then `server`, `web`, `extension`, and `mcp-server`. If you need to rebuild a single package, use `npm run build:core`, `npm run build:web`, etc. — but always rebuild `core` first if you changed it.
+
+**`npm start`** runs the API server on port 3847. The server serves both the API endpoints and the web app. Open http://localhost:3847.
+
+For development with hot-reload, run `npm run dev` (Vite dev server on port 3000, proxies API to port 3847) and `npm run dev:server` (API server with watch) in separate terminals — or just `npm start` which runs both concurrently.
+
+---
+
+## Web App
+
+### Running
+
+```bash
+npm start
+```
+
+This starts the server on port 3847, serving both the API and the web app. Open http://localhost:3847.
+
+For development with hot-reload:
+
+```bash
+npm start    # Runs both Vite dev server (port 3000) + API server (port 3847)
+```
+
+### What You Can Read
+
+| Source | How | Needs Server? |
 |---|---|---|
 | Pasted text | Paste tab | No |
-| Markdown (pasted) | Paste tab → Markdown | No |
+| Markdown (pasted) | Paste tab | No |
 | URL (web article) | URL tab | Yes |
 | PDF | Upload File tab | Yes |
 | Word (.docx) | Upload File tab | Yes |
 | PowerPoint (.pptx) | Upload File tab | Yes |
 | Markdown file | Upload File tab | Yes |
 
-The web app alone (no server) works for pasted text. The server is only needed for file upload and URL fetch.
+The web app alone (no server) works for pasted text. The server is needed for file uploads, URL fetching, and AI summarisation.
 
-## Features
+---
 
-- **ORP highlighting** — key letter in red, aligned consistently across every word
-- **Adjustable speed** — 50–1,500 WPM via slider or ↑↓ keys
-- **Words per flash** — 1, 2, or 3 words at a time (in Settings)
-- **Full-text preview** — scrollable panel below; current word highlighted; click any word to jump there
-- **Section breaks** — headings in Markdown/Word create natural pause points (Space to continue)
-- **Bookmarks** — save named positions; multiple bookmarks per document
-- **History** — all previously read documents stored locally; reopens where you left off
-- **Font choice** — IBM Plex Mono (default, research-backed for RSVP), Roboto Mono, Space Mono, Courier Prime, Courier New
-- **Dark / Light / System theme**
-- **Keyboard shortcuts** — `Space` play/pause · `↑↓` WPM · `←→` skip
+## Chrome Extension
 
-## AI summarisation (optional)
+The extension lets you speed-read any web page directly from your browser. Click the extension icon on any page, press **Start Reading**, and it opens the full reader in a new tab.
 
-For documents over 3,000 words, a ✨ button appears. It uses [Claude](https://www.anthropic.com/) to produce a ~25% summary then loads it into the reader.
-
-**Setup:**
-```bash
-cp server/.env.example server/.env
-# Add your key to server/.env:
-# ANTHROPIC_API_KEY=sk-ant-...
-```
-
-Get a key at [console.anthropic.com](https://console.anthropic.com/). If the key is absent the button shows a clear message and everything else keeps working.
-
-## Chrome extension
-
-Lets you speed-read any web page without leaving the browser.
+### Building
 
 ```bash
 npm run build:extension
 ```
 
-Load `packages/extension/dist/` as an unpacked extension:  
-Chrome → `chrome://extensions` → Developer mode → Load unpacked
+This outputs a ready-to-load extension in `packages/extension/dist/`.
 
-## Claude Code / MCP integration
+### Installing in Chrome
 
-Use the `speed_read` tool directly from Claude Code.
+1. Open Chrome and navigate to `chrome://extensions`
+2. Enable **Developer mode** (toggle in the top-right corner)
+3. Click **Load unpacked**
+4. Select the `packages/extension/dist/` directory
+5. The extension icon (lightning bolt) appears in your toolbar
+
+### Using
+
+1. Navigate to any web page (article, Wikipedia, blog post, etc.)
+2. Click the RSVP Speed Reader icon in your Chrome toolbar
+3. Adjust WPM if desired (default: 300)
+4. Click **Start Reading**
+5. A new tab opens with the full reader UI
+
+### Shared History
+
+If the local server is running (`npm start`), the extension opens the reader at `http://localhost:3847` so that reading history is shared between the extension and the web app. If the server is not running, the extension falls back to its own built-in reader page (history is local to the extension in that case).
+
+### Permissions
+
+The extension requests minimal permissions:
+
+- **activeTab** — access to the current tab only when you click the extension icon (no background snooping)
+- **storage** — save your WPM preference
+- **scripting** — inject the content extraction script into the current page when you click Start Reading
+
+The extension does **not** request access to all your sites. It only accesses a page when you explicitly click the icon.
+
+### For AI Agents
 
 ```bash
+# Build the extension
+cd /path/to/rsvp-reader
+npm run build:extension
+
+# The built extension is at:
+# /path/to/rsvp-reader/packages/extension/dist/
+#
+# Tell the user to:
+# 1. Open chrome://extensions
+# 2. Enable Developer mode
+# 3. Click "Load unpacked"
+# 4. Select the packages/extension/dist/ directory
+```
+
+---
+
+## Claude Code / MCP Integration
+
+The MCP server exposes RSVP tools directly inside Claude Code. Say "speed read this URL" or "speed read this PDF" and Claude opens the reader in your browser.
+
+### Setup
+
+```bash
+# 1. Build the MCP server (requires core to be built first)
+npm run build:core
+npm run build:web
 npm run build:mcp
 ```
 
-Add to `~/.claude/settings.json`:
+### Configure Claude Code CLI
+
+Add the MCP server to `~/.claude/.mcp.json` (create the file if it doesn't exist):
+
 ```json
 {
   "mcpServers": {
@@ -93,24 +203,257 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-Then in Claude Code:
-```
-speed_read https://example.com/article
-speed_read /path/to/paper.pdf
-```
+**Important:** Replace `/absolute/path/to/rsvp-reader` with the actual absolute path to your clone. Use `pwd` in the repo root to get it.
 
-## Individual commands
+### For AI Agents
 
 ```bash
-npm run dev          # web app only (port 3000)
-npm run dev:server   # parse server only (port 3847)
-npm test             # unit tests (all workspaces)
-npx playwright test  # E2E tests (requires both servers running)
+# Get the absolute path to the MCP server entry point
+RSVP_MCP_PATH="$(cd /path/to/rsvp-reader && pwd)/packages/mcp-server/dist/index.js"
+
+# Verify the file exists
+ls -la "$RSVP_MCP_PATH"
+
+# The MCP config goes in ~/.claude/.mcp.json (for Claude Code CLI)
+# Add or merge this into the file:
+# {
+#   "mcpServers": {
+#     "rsvp-reader": {
+#       "command": "node",
+#       "args": ["<RSVP_MCP_PATH value from above>"]
+#     }
+#   }
+# }
 ```
+
+After configuring, restart Claude Code. The tools will be available immediately.
+
+### Available MCP Tools
+
+| Tool | Description |
+|---|---|
+| `speed_read` | Speed-read a URL, file path, or raw text. Opens the reader in your browser. |
+| `speed_read_artifact` | Generate a self-contained HTML RSVP reader as an inline artifact (no server needed). |
+| `speed_read_settings` | Configure default WPM and chunk size. |
+| `speed_read_clipboard` | Speed-read text content directly. |
+
+### Usage Examples
+
+In Claude Code, just say:
+
+```
+speed_read https://en.wikipedia.org/wiki/Speed_reading
+speed_read /path/to/paper.pdf
+speed_read /path/to/slides.pptx
+```
+
+Or ask Claude to generate an inline reader:
+
+```
+Use speed_read_artifact with this text: [paste text]
+```
+
+The artifact version produces a self-contained HTML page that works without any server.
+
+---
+
+## Claude Desktop Integration
+
+The same MCP server works with Claude Desktop (the macOS/Windows app).
+
+### Configure Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "rsvp-reader": {
+      "command": "node",
+      "args": ["/absolute/path/to/rsvp-reader/packages/mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+Restart Claude Desktop after saving. The speed_read tools appear in the tools menu.
+
+### For AI Agents
+
+```bash
+# macOS config path:
+CLAUDE_DESKTOP_CONFIG="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+
+# Windows config path:
+# CLAUDE_DESKTOP_CONFIG="$APPDATA/Claude/claude_desktop_config.json"
+
+# Get the absolute MCP server path
+RSVP_MCP_PATH="$(cd /path/to/rsvp-reader && pwd)/packages/mcp-server/dist/index.js"
+
+# Verify it exists
+ls -la "$RSVP_MCP_PATH"
+
+# Add the rsvp-reader entry to the mcpServers object in the config file.
+# If the file doesn't exist, create it with the full JSON structure.
+# If it exists, merge the new server into the existing mcpServers object.
+# Do NOT overwrite other existing MCP server entries.
+```
+
+---
+
+## Features
+
+- **ORP highlighting** — key letter in red, aligned consistently across every word
+- **Adjustable speed** — 50-1,500 WPM via slider or keyboard
+- **Words per flash** — 1, 2, or 3 words at a time (in Settings)
+- **Full-text preview** — scrollable panel below the reader; current word highlighted; click any word to jump there
+- **Section breaks** — headings in Markdown/Word/PDF create natural pause points (Space to continue)
+- **Bookmarks** — save named positions; multiple bookmarks per document
+- **History** — all previously read documents stored locally; reopens where you left off
+- **Font choice** — IBM Plex Mono (default), Roboto Mono, Space Mono, Courier Prime, Courier New
+- **Dark / Light / System theme**
+- **Keyboard shortcuts:**
+
+| Key | Action |
+|---|---|
+| `Space` | Play / Pause (or continue past section break) |
+| `↑` / `↓` | Increase / decrease WPM |
+| `←` / `→` | Skip backward / forward |
+| `Delete` / `Backspace` | Back one sentence |
+| `Enter` | Skip to next sentence (or next section if paused at a break) |
+
+---
+
+## AI Summarisation (Optional)
+
+For documents over 3,000 words, a sparkle button appears in the top bar. It uses Claude to produce a ~25% summary optimised for speed reading, then loads the summary into the reader.
+
+### Setup
+
+```bash
+cp server/.env.example server/.env
+```
+
+Edit `server/.env` and add your Anthropic API key:
+
+```
+ANTHROPIC_API_KEY=sk-ant-api03-...
+```
+
+Get a key at [console.anthropic.com](https://console.anthropic.com/). If the key is absent, the button shows a clear message and everything else works normally.
+
+---
+
+## Architecture
+
+```
+rsvp-reader/
+├── packages/
+│   ├── core/           # Shared RSVP engine, parsers, types (platform-agnostic)
+│   ├── web/            # React web app (Vite + React 19 + Zustand)
+│   ├── extension/      # Chrome extension (Manifest V3)
+│   └── mcp-server/     # MCP server for Claude Code / Claude Desktop
+├── server/             # Express API server (parsing, summarisation)
+├── package.json        # npm workspaces root
+└── .nvmrc              # Node.js version (18)
+```
+
+### Package Dependencies
+
+```
+@rsvp-reader/core          (no internal deps — leaf package)
+  ├── @rsvp-reader/web     (imports core)
+  ├── @rsvp-reader/server  (imports core)
+  ├── @rsvp-reader/extension (imports core + web components)
+  └── @rsvp-reader/mcp-server (imports core, serves web/dist)
+```
+
+### How Each Piece Works
+
+- **Core** (`packages/core`): The RSVP engine — tokenises text, calculates ORP positions, manages word-by-word playback timing. Shared by all other packages.
+- **Web** (`packages/web`): React SPA with the full reader UI — display, controls, settings, bookmarks, history. Built with Vite.
+- **Server** (`server`): Express API server. Parses PDFs, DOCX, PPTX, and URLs into RSVP documents. Serves the web app's built files. Optional AI summarisation via Anthropic API.
+- **Extension** (`packages/extension`): Chrome Manifest V3 extension. Extracts page text using Mozilla Readability, opens the reader in a new tab. Uses `activeTab` permission (no blanket site access).
+- **MCP Server** (`packages/mcp-server`): Model Context Protocol server for Claude. Parses documents using built-in parsers, spins up an embedded web server, and opens the reader in your browser.
+
+---
+
+## Development
+
+### Scripts
+
+```bash
+npm start              # Web app + API server (development, with hot-reload)
+npm run build          # Build everything (core -> server -> web -> extension -> mcp)
+npm test               # Run all unit tests
+npm run typecheck      # TypeScript type checking
+
+# Individual packages
+npm run build:core     # Build core library
+npm run build:server   # Build API server
+npm run build:web      # Build web app
+npm run build:extension # Build Chrome extension
+npm run build:mcp      # Build MCP server
+
+npm run dev            # Web app dev server only (port 3000)
+npm run dev:server     # API server with watch (port 3847)
+```
+
+### Environment Variables
+
+| Variable | Where | Required | Description |
+|---|---|---|---|
+| `ANTHROPIC_API_KEY` | `server/.env` | No | Enables AI summarisation. Get from [console.anthropic.com](https://console.anthropic.com/) |
+| `PORT` | `server/.env` | No | API server port (default: 3847) |
+
+### Running Tests
+
+```bash
+npm test                  # All unit tests
+npm run test:watch        # Watch mode (per workspace)
+npx playwright test       # E2E tests (requires both servers running)
+```
+
+---
+
+## Troubleshooting
+
+### `npm install` fails
+
+- Ensure Node.js 18+ is installed: `node --version`
+- Delete `node_modules` and `package-lock.json`, then retry: `rm -rf node_modules package-lock.json && npm install`
+
+### Web app shows blank page
+
+- Make sure you ran `npm run build` before `npm start` (the server needs `packages/web/dist` to serve the app)
+- Check that the API server is running: `curl http://localhost:3847/api/health`
+
+### Chrome extension: "Cannot inject script into this page"
+
+- Some pages block extensions (Chrome Web Store, `chrome://` pages, browser internal pages)
+- Try on a regular webpage like Wikipedia
+
+### Chrome extension: nothing happens when clicking Start Reading
+
+- Open Chrome DevTools on the popup (right-click extension icon → Inspect popup) to see console errors
+- Reload the extension at `chrome://extensions`
+
+### MCP tools not appearing in Claude
+
+- Verify the path in your MCP config points to the built file: `ls /path/to/packages/mcp-server/dist/index.js`
+- Rebuild: `npm run build:core && npm run build:web && npm run build:mcp`
+- Restart Claude Code (`claude` CLI) or Claude Desktop after changing config
+
+### PDF/DOCX/PPTX parsing fails
+
+- These formats require the API server to be running: `npm run dev:server`
+- Check server logs for specific parse errors
+
+---
 
 ## Tech
 
-React · TypeScript · Vite · Zustand · Express · pdfjs-dist · mammoth · @mozilla/readability · Playwright
+React 19 · TypeScript · Vite · Zustand · Express · esbuild · pdfjs-dist · mammoth · jszip · @mozilla/readability · @modelcontextprotocol/sdk · @anthropic-ai/sdk
 
 ## License
 

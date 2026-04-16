@@ -9,9 +9,21 @@ interface McpDocResult {
   error: string | null;
 }
 
+// Chrome extension API types — only present when running inside an extension page
+declare const chrome: any;
+
+function getChromeStorageLocal(): any | null {
+  try {
+    return typeof chrome !== 'undefined' && chrome.storage?.local ? chrome.storage.local : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * If the page URL contains a ?doc= parameter, fetch the document from the
- * MCP server's /api/mcp-doc endpoint and return it for auto-loading.
+ * If the page URL contains a ?doc= parameter, load the document either:
+ *  - From chrome.storage.local (when running as a Chrome extension page)
+ *  - From the server's /api/mcp-doc endpoint (when running as a web app)
  */
 export function useMcpDoc(): McpDocResult {
   const [doc, setDoc] = useState<RsvpDocument | null>(null);
@@ -26,18 +38,45 @@ export function useMcpDoc(): McpDocResult {
     if (!docId) return;
 
     setLoading(true);
-    fetch(`/api/mcp-doc?doc=${encodeURIComponent(docId)}`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data: { doc: RsvpDocument; wpm: number; chunkSize: 1 | 2 | 3 }) => {
-        setDoc(data.doc);
-        setWpm(data.wpm);
-        setChunkSize(data.chunkSize);
-      })
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setLoading(false));
+
+    const chromeStorage = getChromeStorageLocal();
+
+    if (chromeStorage) {
+      // Extension context: read from chrome.storage.local
+      const storageKey = `rsvp_doc_${docId}`;
+
+      chrome.storage.sync.get(['wpm'], (result: any) => {
+        if (result.wpm && typeof result.wpm === 'number') {
+          setWpm(result.wpm);
+        }
+      });
+
+      chromeStorage.get([storageKey], (result: any) => {
+        const entry = result[storageKey];
+        if (!entry) {
+          setError(`Document not found (id: ${docId}). Please try again.`);
+          setLoading(false);
+          return;
+        }
+        setDoc(entry as RsvpDocument);
+        setLoading(false);
+        chromeStorage.remove([storageKey]);
+      });
+    } else {
+      // Web / MCP context: fetch from local server
+      fetch(`/api/mcp-doc?doc=${encodeURIComponent(docId)}`)
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then((data: { doc: RsvpDocument; wpm: number; chunkSize: 1 | 2 | 3 }) => {
+          setDoc(data.doc);
+          setWpm(data.wpm);
+          setChunkSize(data.chunkSize);
+        })
+        .catch((err: Error) => setError(err.message))
+        .finally(() => setLoading(false));
+    }
   }, []);
 
   return { doc, wpm, chunkSize, loading, error };

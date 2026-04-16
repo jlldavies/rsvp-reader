@@ -1,67 +1,47 @@
-import React from 'react';
-import { createRoot } from 'react-dom/client';
 import { parseText } from '@rsvp-reader/core';
 import { extractPageContent } from './extractor';
-import { createOverlay, destroyOverlay } from './overlay';
-import { ReaderApp } from '../reader/ReaderApp';
 
 interface SpeedReadMessage {
   action: 'speedRead';
   wpm?: number;
 }
 
-chrome.runtime.onMessage.addListener((message: SpeedReadMessage) => {
-  if (message.action !== 'speedRead') return;
+// Guard against duplicate injection (executeScript may be called multiple times)
+if (!(window as any).__rsvpContentLoaded) {
+  (window as any).__rsvpContentLoaded = true;
 
-  // If overlay is already open, close it
-  const existingHost = document.getElementById('rsvp-overlay-host');
-  if (existingHost) {
-    destroyOverlay();
-    return;
-  }
+  console.log('[RSVP] Content script loaded on', window.location.href);
 
-  const wpm = message.wpm ?? 300;
+  chrome.runtime.onMessage.addListener((message: SpeedReadMessage, _sender, sendResponse) => {
+    console.log('[RSVP] Message received:', message);
 
-  // Extract readable content from the current page
-  const extracted = extractPageContent(document, window.location.href);
+    if (message.action !== 'speedRead') return;
 
-  if (!extracted.text.trim()) {
-    console.warn('[RSVP] No readable content found on this page.');
-    return;
-  }
+    console.log('[RSVP] Extracting page content...');
+    const extracted = extractPageContent(document, window.location.href);
+    console.log('[RSVP] Extracted:', { title: extracted.title, textLength: extracted.text.length });
 
-  // Parse into an RsvpDocument
-  const doc = parseText(extracted.text, extracted.url, extracted.title);
-
-  // Create overlay and mount React app into shadow DOM
-  createOverlay(document);
-  const host = document.getElementById('rsvp-overlay-host')!;
-  const shadow = host.shadowRoot!;
-  const mountPoint = shadow.getElementById('rsvp-reader-root')!;
-
-  // Inject minimal reset styles into shadow DOM
-  const style = document.createElement('style');
-  style.textContent = `
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    #rsvp-reader-root {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100vw;
-      height: 100vh;
+    if (!extracted.text.trim()) {
+      console.error('[RSVP] No readable content found on this page.');
+      sendResponse({ error: 'No readable content found.' });
+      return true;
     }
-  `;
-  shadow.insertBefore(style, mountPoint);
 
-  const root = createRoot(mountPoint);
-  root.render(
-    React.createElement(ReaderApp, {
-      document: doc,
-      wpm,
-      onClose: () => {
-        root.unmount();
-        destroyOverlay();
-      },
-    })
-  );
-});
+    const wpm = message.wpm ?? 300;
+
+    console.log('[RSVP] Parsing text...');
+    parseText(extracted.text, extracted.url, extracted.title)
+      .then((doc) => {
+        console.log('[RSVP] Parsed doc:', { title: doc.title, totalWords: doc.totalWords });
+        // Send the full doc to background — it decides whether to open via server or extension page
+        chrome.runtime.sendMessage({ action: 'openReader', doc, wpm });
+        sendResponse({ ok: true });
+      })
+      .catch((err) => {
+        console.error('[RSVP] parseText failed:', err);
+        sendResponse({ error: String(err) });
+      });
+
+    return true;
+  });
+}
