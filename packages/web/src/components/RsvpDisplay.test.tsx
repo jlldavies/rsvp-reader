@@ -125,25 +125,23 @@ describe('RsvpDisplay — word display', () => {
     expect(orpEl).toHaveStyle({ color: '#ff0000' });
   });
 
-  it('applies prefixColor from settings to prefix text', () => {
+  it('applies CSS var for prefix color', () => {
     useReaderStore.setState({
       currentToken: mockToken('Hello', 1),
       engineState: 'playing',
-      settings: { ...DEFAULT_SETTINGS, prefixColor: '#0000ff' },
     });
     render(<RsvpDisplay />);
     const prefixEl = screen.getByText('H');
-    expect(prefixEl).toHaveStyle({ color: '#0000ff' });
+    expect(prefixEl).toHaveStyle({ color: 'var(--color-word-prefix)' });
   });
 
-  it('applies suffixColor from settings to suffix text', () => {
+  it('applies CSS var for suffix color', () => {
     useReaderStore.setState({
       currentToken: mockToken('Hello', 1),
       engineState: 'playing',
-      settings: { ...DEFAULT_SETTINGS, suffixColor: '#00aa00' },
     });
     render(<RsvpDisplay />);
     const suffixEl = screen.getByText('llo');
-    expect(suffixEl).toHaveStyle({ color: '#00aa00' });
+    expect(suffixEl).toHaveStyle({ color: 'var(--color-word-suffix)' });
   });
 });

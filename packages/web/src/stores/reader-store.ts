@@ -18,12 +18,24 @@ interface ReaderState {
   setCurrentSectionHeading: (heading: string | null) => void;
 }
 
+const SETTINGS_KEY = 'rsvp-settings';
+
+function loadPersistedSettings(): ReaderSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return DEFAULT_SETTINGS;
+    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
 export const useReaderStore = create<ReaderState>((set) => ({
   document: null,
   currentToken: null,
   engineState: 'idle',
   progress: 0,
-  settings: DEFAULT_SETTINGS,
+  settings: loadPersistedSettings(),
   currentSectionHeading: null,
 
   setDocument: (document) => set({ document }),
@@ -31,8 +43,10 @@ export const useReaderStore = create<ReaderState>((set) => ({
   setEngineState: (engineState) => set({ engineState }),
   setProgress: (progress) => set({ progress }),
   updateSettings: (partial) =>
-    set((state) => ({
-      settings: { ...state.settings, ...partial },
-    })),
+    set((state) => {
+      const next = { ...state.settings, ...partial };
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+      return { settings: next };
+    }),
   setCurrentSectionHeading: (currentSectionHeading) => set({ currentSectionHeading }),
 }));

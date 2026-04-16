@@ -23,9 +23,9 @@ describe('useSettings — defaults', () => {
     expect(result.current.settings.chunkSize).toBe(1);
   });
 
-  it('default theme is light', () => {
+  it('default theme is system', () => {
     const { result } = renderHook(() => useSettings());
-    expect(result.current.settings.theme).toBe('light');
+    expect(result.current.settings.theme).toBe('system');
   });
 
   it('default sectionPauseMode is manual', () => {

@@ -66,7 +66,8 @@ describe('Popup — start reading action', () => {
 
     expect(sendMessageSpy).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ action: 'speedRead' })
+      expect.objectContaining({ action: 'speedRead' }),
+      expect.any(Function)
     );
   });
 
@@ -81,7 +82,8 @@ describe('Popup — start reading action', () => {
 
     expect(sendMessageSpy).toHaveBeenCalledWith(
       1,
-      expect.objectContaining({ wpm: 600 })
+      expect.objectContaining({ wpm: 600 }),
+      expect.any(Function)
     );
   });
 });

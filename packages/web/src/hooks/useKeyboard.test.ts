@@ -65,18 +65,20 @@ describe('useKeyboard — Space key', () => {
 });
 
 describe('useKeyboard — Arrow keys', () => {
-  it('calls skipForward on ArrowRight', () => {
+  it('increases WPM by 5 on ArrowRight', () => {
+    useReaderStore.setState({ settings: { ...DEFAULT_SETTINGS, wpm: 300 } });
     const actions = makeActions();
     renderHook(() => useKeyboard(actions));
     pressKey('ArrowRight');
-    expect(actions.skipForward).toHaveBeenCalledOnce();
+    expect(useReaderStore.getState().settings.wpm).toBe(305);
   });
 
-  it('calls skipBackward on ArrowLeft', () => {
+  it('decreases WPM by 5 on ArrowLeft', () => {
+    useReaderStore.setState({ settings: { ...DEFAULT_SETTINGS, wpm: 300 } });
     const actions = makeActions();
     renderHook(() => useKeyboard(actions));
     pressKey('ArrowLeft');
-    expect(actions.skipBackward).toHaveBeenCalledOnce();
+    expect(useReaderStore.getState().settings.wpm).toBe(295);
   });
 
   it('increases WPM by 25 on ArrowUp', () => {
