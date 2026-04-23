@@ -1,3 +1,21 @@
+import { config as loadEnv } from 'dotenv';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
+// Load env before any module reads process.env.
+// Priority: RSVP_ENV_FILE override → repo's server/.env → cwd/.env
+const __dirname_boot = dirname(fileURLToPath(import.meta.url));
+const envCandidates = [
+  process.env.RSVP_ENV_FILE,
+  resolve(__dirname_boot, '../../../server/.env'),  // packages/mcp-server/dist/ → repo/server/.env
+  resolve(process.cwd(), 'server/.env'),
+  resolve(process.cwd(), '.env'),
+].filter(Boolean) as string[];
+for (const path of envCandidates) {
+  const result = loadEnv({ path, quiet: true });
+  if (!result.error) break;
+}
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
