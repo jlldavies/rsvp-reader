@@ -19,6 +19,7 @@ Works as a **web app**, **Chrome extension**, and **Claude AI tool** (MCP server
 - [Architecture](#architecture)
 - [Development](#development)
 - [Troubleshooting](#troubleshooting)
+- [Security](#security)
 
 ---
 
@@ -433,6 +434,41 @@ npx playwright test       # E2E tests (requires both servers running)
 
 - These formats require the API server to be running: `npm run dev:server`
 - Check server logs for specific parse errors
+
+---
+
+## Security
+
+This is a **local-first** tool. Every server it spawns — the full API server
+(`npm start`, port 3847), the Vite dev server (`npm run dev`, port 3000),
+and the embedded server that Claude launches when you use `speed_read` (a
+random high port, loopback-bound) — listens on `127.0.0.1` only. They are
+not reachable from the network or from another device on your Wi-Fi.
+
+### Dependabot alerts
+
+GitHub Dependabot may flag advisories against transitive dependencies of
+the parser chain (`multer`, `@mozilla/readability`, `mammoth` →
+`@xmldom/xmldom`, etc.). Nearly all of these are **denial-of-service** flaws
+reachable only by feeding malformed input to the parser — which means:
+
+- **External attackers cannot reach the servers** (loopback only).
+- **The worst-case outcome is that the local Node process crashes**, which
+  you can resolve by restarting the reader.
+- There is no persisted data to corrupt: documents live in memory on the
+  embedded server; history lives in your browser's localStorage.
+
+This doesn't mean the alerts are worthless — a malicious page open in
+another browser tab could POST to `127.0.0.1` and crash the parser. So
+we still pin patched versions where they exist:
+
+- `multer@^2.0.0` (2.x patches all seven DoS advisories against 1.x)
+- `@mozilla/readability@^0.6.0` (patches the regex DoS in <0.6.0)
+- `@xmldom/xmldom` resolves to `0.8.13+` via `mammoth@1.12.0`'s semver
+  range
+
+Run `npm audit` to see the current state on your machine. A clean install
+of the current `main` branch should report **0 vulnerabilities**.
 
 ---
 
