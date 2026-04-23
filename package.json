@@ -25,7 +25,7 @@
     "build:mcp": "npm run build --workspace=packages/mcp-server",
     "test": "npm test --workspaces",
     "typecheck": "npm run build:core && tsc --noEmit --project packages/web/tsconfig.json && tsc --noEmit --project packages/mcp-server/tsconfig.json",
-    "postinstall": "node scripts/dropbox-ignore.mjs",
+    "postinstall": "node scripts/dropbox-ignore.mjs || exit 0",
     "dropbox-ignore": "node scripts/dropbox-ignore.mjs"
   },
   "devDependencies": {
