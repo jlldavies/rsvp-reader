@@ -14,7 +14,6 @@ Works as a **web app**, **Chrome extension**, and **Claude AI tool** (MCP server
 - [Web App](#web-app)
 - [Chrome Extension](#chrome-extension)
 - [Claude Code / MCP Integration](#claude-code--mcp-integration)
-- [Claude Desktop Integration](#claude-desktop-integration)
 - [Features](#features)
 - [AI Summarisation (Optional)](#ai-summarisation-optional)
 - [Architecture](#architecture)
@@ -179,18 +178,36 @@ npm run build:extension
 
 The MCP server exposes RSVP tools directly inside Claude Code. Say "speed read this URL" or "speed read this PDF" and Claude opens the reader in your browser.
 
-### Setup
+### Build
 
 ```bash
-# 1. Build the MCP server (requires core to be built first)
+# Build the MCP server (requires core and web to be built first)
 npm run build:core
 npm run build:web
 npm run build:mcp
 ```
 
-### Configure Claude Code CLI
+### Option 1: Claude Code CLI (Recommended)
 
-Add the MCP server to `~/.claude/.mcp.json` (create the file if it doesn't exist):
+The simplest way to register the MCP server is with the `claude` CLI:
+
+```bash
+# From the rsvp-reader repo root:
+claude mcp add rsvp-reader node "$(pwd)/packages/mcp-server/dist/index.js"
+```
+
+This writes the config to `~/.claude/.mcp.json` automatically. Restart Claude Code for the tools to appear.
+
+Alternatively, you can edit `~/.claude/.mcp.json` by hand — see `.mcp.json.example` in this repo for the format. Replace the path with the absolute path to your clone (`pwd` in the repo root to get it).
+
+### Option 2: Claude Desktop (macOS / Windows app)
+
+Edit your Claude Desktop config file:
+
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+Add the `rsvp-reader` entry to the `mcpServers` object (create the file if it doesn't exist):
 
 ```json
 {
@@ -203,30 +220,42 @@ Add the MCP server to `~/.claude/.mcp.json` (create the file if it doesn't exist
 }
 ```
 
-**Important:** Replace `/absolute/path/to/rsvp-reader` with the actual absolute path to your clone. Use `pwd` in the repo root to get it.
+Replace `/absolute/path/to/rsvp-reader` with the actual absolute path to your clone. Restart Claude Desktop after saving.
 
 ### For AI Agents
 
-```bash
-# Get the absolute path to the MCP server entry point
-RSVP_MCP_PATH="$(cd /path/to/rsvp-reader && pwd)/packages/mcp-server/dist/index.js"
+If you are an AI agent helping a user set up the MCP server:
 
-# Verify the file exists
+```bash
+# 1. Build (if not already built)
+cd /path/to/rsvp-reader
+npm run build:core && npm run build:web && npm run build:mcp
+
+# 2. Get the absolute path to the MCP server entry point
+RSVP_MCP_PATH="$(pwd)/packages/mcp-server/dist/index.js"
+
+# 3. Verify the file exists
 ls -la "$RSVP_MCP_PATH"
 
-# The MCP config goes in ~/.claude/.mcp.json (for Claude Code CLI)
-# Add or merge this into the file:
-# {
-#   "mcpServers": {
-#     "rsvp-reader": {
-#       "command": "node",
-#       "args": ["<RSVP_MCP_PATH value from above>"]
+# 4a. For Claude Code CLI — register directly:
+claude mcp add rsvp-reader node "$RSVP_MCP_PATH"
+
+# 4b. For Claude Desktop — add to the config file:
+#     macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
+#     Windows: %APPDATA%/Claude/claude_desktop_config.json
+#
+#     Merge this into the mcpServers object (do NOT overwrite other entries):
+#     {
+#       "mcpServers": {
+#         "rsvp-reader": {
+#           "command": "node",
+#           "args": ["<RSVP_MCP_PATH>"]
+#         }
+#       }
 #     }
-#   }
-# }
 ```
 
-After configuring, restart Claude Code. The tools will be available immediately.
+After configuring, restart Claude Code or Claude Desktop. The tools will be available immediately.
 
 ### Available MCP Tools
 
@@ -254,50 +283,6 @@ Use speed_read_artifact with this text: [paste text]
 ```
 
 The artifact version produces a self-contained HTML page that works without any server.
-
----
-
-## Claude Desktop Integration
-
-The same MCP server works with Claude Desktop (the macOS/Windows app).
-
-### Configure Claude Desktop
-
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
-
-```json
-{
-  "mcpServers": {
-    "rsvp-reader": {
-      "command": "node",
-      "args": ["/absolute/path/to/rsvp-reader/packages/mcp-server/dist/index.js"]
-    }
-  }
-}
-```
-
-Restart Claude Desktop after saving. The speed_read tools appear in the tools menu.
-
-### For AI Agents
-
-```bash
-# macOS config path:
-CLAUDE_DESKTOP_CONFIG="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
-
-# Windows config path:
-# CLAUDE_DESKTOP_CONFIG="$APPDATA/Claude/claude_desktop_config.json"
-
-# Get the absolute MCP server path
-RSVP_MCP_PATH="$(cd /path/to/rsvp-reader && pwd)/packages/mcp-server/dist/index.js"
-
-# Verify it exists
-ls -la "$RSVP_MCP_PATH"
-
-# Add the rsvp-reader entry to the mcpServers object in the config file.
-# If the file doesn't exist, create it with the full JSON structure.
-# If it exists, merge the new server into the existing mcpServers object.
-# Do NOT overwrite other existing MCP server entries.
-```
 
 ---
 

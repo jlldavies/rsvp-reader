@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "rsvp-reader": {
+      "command": "node",
+      "args": ["/absolute/path/to/rsvp-reader/packages/mcp-server/dist/index.js"]
+    }
+  }
+}

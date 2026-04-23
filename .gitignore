@@ -15,6 +15,9 @@ server/.env
 # macOS
 .DS_Store
 
+# MCP config (contains absolute paths specific to your machine)
+.mcp.json
+
 # Editor
 .vscode/settings.json
 .idea/
