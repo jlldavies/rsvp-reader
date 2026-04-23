@@ -5,8 +5,11 @@
  */
 import { test, expect } from '@playwright/test';
 
-const PDF_PATH = 'REDACTED_PDF_PATH';
-const MD_PATH = 'REDACTED_MD_PATH';
+// Set these environment variables to point at local test files:
+//   E2E_PDF_PATH  — any PDF file
+//   E2E_MD_PATH   — any Markdown file
+const PDF_PATH = process.env.E2E_PDF_PATH ?? '';
+const MD_PATH = process.env.E2E_MD_PATH ?? '';
 const TRIAL_URL = 'https://en.wikipedia.org/wiki/Speed_reading';
 
 // ─── File upload helpers ──────────────────────────────────────────────────────
@@ -20,6 +23,7 @@ async function openFileTab(page: import('@playwright/test').Page) {
 // ─── PDF ──────────────────────────────────────────────────────────────────────
 test.describe('Real file imports', () => {
   test('PDF → reader loads with word count', async ({ page }) => {
+    test.skip(!PDF_PATH, 'Set E2E_PDF_PATH to run this test');
     await openFileTab(page);
     // setInputFiles works on hidden inputs without needing visibility
     await page.locator('[data-testid="file-input"]').setInputFiles(PDF_PATH);
@@ -32,6 +36,7 @@ test.describe('Real file imports', () => {
 
   // ─── Markdown ────────────────────────────────────────────────────────────────
   test('Markdown → reader loads with sections', async ({ page }) => {
+    test.skip(!MD_PATH, 'Set E2E_MD_PATH to run this test');
     await openFileTab(page);
     await page.locator('[data-testid="file-input"]').setInputFiles(MD_PATH);
     await expect(page.locator('[data-testid="progress-track"]')).toBeVisible({ timeout: 10000 });
