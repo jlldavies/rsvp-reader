@@ -107,6 +107,17 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </select>
       </div>
 
+      {/* Context words (phantom) */}
+      <div style={styles.row}>
+        <label htmlFor="phantom-toggle" style={styles.label}>Context words</label>
+        <input
+          id="phantom-toggle"
+          type="checkbox"
+          checked={settings.phantomWords}
+          onChange={(e) => onSettingChange('phantomWords', e.target.checked)}
+        />
+      </div>
+
       {/* Section pause mode */}
       <div style={styles.row}>
         <label htmlFor="section-pause" style={styles.label}>Section pause</label>

@@ -9,6 +9,8 @@ interface ReaderState {
   progress: number;
   settings: ReaderSettings;
   currentSectionHeading: string | null;
+  beforeText: string;
+  afterText: string;
 
   setDocument: (doc: RsvpDocument | null) => void;
   setCurrentToken: (token: RsvpToken | null) => void;
@@ -16,6 +18,7 @@ interface ReaderState {
   setProgress: (progress: number) => void;
   updateSettings: (partial: Partial<ReaderSettings>) => void;
   setCurrentSectionHeading: (heading: string | null) => void;
+  setPhantomContext: (before: string, after: string) => void;
 }
 
 const SETTINGS_KEY = 'rsvp-settings';
@@ -37,6 +40,8 @@ export const useReaderStore = create<ReaderState>((set) => ({
   progress: 0,
   settings: loadPersistedSettings(),
   currentSectionHeading: null,
+  beforeText: '',
+  afterText: '',
 
   setDocument: (document) => set({ document }),
   setCurrentToken: (currentToken) => set({ currentToken }),
@@ -49,4 +54,5 @@ export const useReaderStore = create<ReaderState>((set) => ({
       return { settings: next };
     }),
   setCurrentSectionHeading: (currentSectionHeading) => set({ currentSectionHeading }),
+  setPhantomContext: (beforeText, afterText) => set({ beforeText, afterText }),
 }));

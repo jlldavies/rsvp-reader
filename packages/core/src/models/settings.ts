@@ -12,6 +12,7 @@ export interface ReaderSettings {
   longWordPauseMultiplier: number;
   font: string;
   fontSize: number;
+  phantomWords: boolean;
 }
 
 export const DEFAULT_SETTINGS: ReaderSettings = {
@@ -28,4 +29,5 @@ export const DEFAULT_SETTINGS: ReaderSettings = {
   longWordPauseMultiplier: 1.2,
   font: "'IBM Plex Mono', 'Roboto Mono', Courier, monospace",
   fontSize: 56,
+  phantomWords: true,
 };
