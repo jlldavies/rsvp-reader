@@ -13,6 +13,7 @@ export function useRsvpPlayer() {
     setProgress,
     setDocument,
     setCurrentSectionHeading,
+    setPhantomContext,
   } = useReaderStore();
 
   // Lazy init engine
@@ -32,9 +33,10 @@ export function useRsvpPlayer() {
 
   // Wire up callbacks
   useEffect(() => {
-    const unsubToken = engine.onToken((token, progress) => {
+    const unsubToken = engine.onToken((token, progress, context) => {
       setCurrentToken(token);
       setProgress(progress);
+      setPhantomContext(context.beforeText, context.afterText);
     });
 
     const unsubState = engine.onStateChange((state, section) => {
@@ -48,7 +50,7 @@ export function useRsvpPlayer() {
       unsubToken();
       unsubState();
     };
-  }, [engine, setCurrentToken, setEngineState, setProgress, setCurrentSectionHeading]);
+  }, [engine, setCurrentToken, setEngineState, setProgress, setCurrentSectionHeading, setPhantomContext]);
 
   // Cleanup on unmount
   useEffect(() => {

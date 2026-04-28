@@ -3,8 +3,9 @@ import { calculateOrp } from '@rsvp-reader/core';
 import { useReaderStore } from '../stores/reader-store';
 
 export const RsvpDisplay: React.FC = () => {
-  const { currentToken, settings, engineState, currentSectionHeading } =
+  const { currentToken, settings, engineState, currentSectionHeading, beforeText, afterText } =
     useReaderStore();
+  const showPhantom = settings.phantomWords;
 
   if (engineState === 'section-break') {
     return (
@@ -49,6 +50,9 @@ export const RsvpDisplay: React.FC = () => {
           className="rsvp-flash"
           style={{ ...styles.multiWordRow, ...fontStyle }}
         >
+          {showPhantom && beforeText && (
+            <><span style={styles.phantomInline}>{beforeText}</span><span>&nbsp;</span></>
+          )}
           {words.map((word, i) => {
             const oi = calculateOrp(word);
             const wp = word.slice(0, oi);
@@ -65,6 +69,9 @@ export const RsvpDisplay: React.FC = () => {
               </React.Fragment>
             );
           })}
+          {showPhantom && afterText && (
+            <><span>&nbsp;</span><span style={styles.phantomInline}>{afterText}</span></>
+          )}
         </div>
       </div>
     );
@@ -102,6 +109,9 @@ export const RsvpDisplay: React.FC = () => {
 
       <div key={currentToken.index} className="rsvp-flash" style={rowStyle}>
         <span style={{ ...styles.prefix, color: 'var(--color-word-prefix)' }}>
+          {showPhantom && beforeText && (
+            <span style={styles.phantom}>{beforeText}{' '}</span>
+          )}
           {prefix}
         </span>
         <span style={{ ...styles.orp, color: settings.orpColor }}>
@@ -109,6 +119,9 @@ export const RsvpDisplay: React.FC = () => {
         </span>
         <span style={{ ...styles.suffix, color: 'var(--color-word-suffix)' }}>
           {suffix}
+          {showPhantom && afterText && (
+            <span style={styles.phantom}>{' '}{afterText}</span>
+          )}
         </span>
       </div>
 
@@ -166,6 +179,15 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: '90vw',
   },
   wordGroup: {
+    whiteSpace: 'nowrap',
+  },
+  phantom: {
+    color: 'var(--color-text-muted)',
+    opacity: 0.25,
+  },
+  phantomInline: {
+    color: 'var(--color-text-muted)',
+    opacity: 0.25,
     whiteSpace: 'nowrap',
   },
   placeholder: {

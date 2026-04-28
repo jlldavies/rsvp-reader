@@ -3,7 +3,12 @@ import { chunkTokens } from './chunker.js';
 
 export type EngineState = 'idle' | 'playing' | 'paused' | 'section-break' | 'finished';
 
-export type TokenCallback = (token: RsvpToken, progress: number) => void;
+export interface TokenContext {
+  beforeText: string;
+  afterText: string;
+}
+
+export type TokenCallback = (token: RsvpToken, progress: number, context: TokenContext) => void;
 export type StateCallback = (state: EngineState, section?: Section) => void;
 
 export class RsvpEngine {
@@ -295,9 +300,32 @@ export class RsvpEngine {
     if (this.currentIndex >= this.flatTokens.length) return;
     const token = this.flatTokens[this.currentIndex];
     const progress = (this.currentIndex + 1) / this.flatTokens.length;
+    const context = this.buildTokenContext();
     for (const cb of this.tokenCallbacks) {
-      cb(token, progress);
+      cb(token, progress, context);
     }
+  }
+
+  private buildTokenContext(): TokenContext {
+    const idx = this.currentIndex;
+    let beforeText = '';
+    let afterText = '';
+
+    // Before: show previous token unless it ended a sentence (or we're at start)
+    if (idx > 0) {
+      const prev = this.flatTokens[idx - 1];
+      if (!this.isSentenceEnd(prev)) {
+        beforeText = prev.text;
+      }
+    }
+
+    // After: show next token unless current token ends a sentence (or we're at end)
+    const current = this.flatTokens[idx];
+    if (idx + 1 < this.flatTokens.length && !this.isSentenceEnd(current)) {
+      afterText = this.flatTokens[idx + 1].text;
+    }
+
+    return { beforeText, afterText };
   }
 
   private setState(state: EngineState, section?: Section): void {

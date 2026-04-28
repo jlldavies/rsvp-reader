@@ -1,6 +1,6 @@
 // Engine
 export { RsvpEngine } from './engine/rsvp-engine.js';
-export type { EngineState, TokenCallback, StateCallback } from './engine/rsvp-engine.js';
+export type { EngineState, TokenCallback, TokenContext, StateCallback } from './engine/rsvp-engine.js';
 export { calculateOrp, calculateChunkOrp } from './engine/orp.js';
 export { calculateDisplayMs, paragraphPauseMs, sectionPauseMs } from './engine/timing.js';
 export { chunkTokens } from './engine/chunker.js';

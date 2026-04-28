@@ -58,6 +58,7 @@ body{background:#0f172a;color:#f1f5f9;font-family:'IBM Plex Mono','Courier New',
 #wp{flex:1;text-align:right;color:#cbd5e1;overflow:hidden;white-space:nowrap;min-width:0}
 #wo{width:1ch;text-align:center;flex-shrink:0;color:#ff2c2c}
 #ws{flex:2;text-align:left;color:#cbd5e1;overflow:hidden;white-space:nowrap;min-width:0}
+.phantom{color:#94a3b8;opacity:.25}
 
 /* multi-word mode */
 #multi-row{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;
@@ -132,6 +133,16 @@ const DOC = ${docJson};
 const tokens = DOC.sections.flatMap(function(s){ return s.tokens; });
 let idx = 0, playing = false, wpm = ${initialWpm}, timer = null;
 let sectionBreakPending = false, sbHeading = '';
+let phantomOn = true;
+
+function isSentEnd(t){ return t.isSectionEnd||t.isParagraphEnd||/[.!?]["')\\]}>]?$/.test(t.text); }
+
+function phantomContext(i){
+  var before = '', after = '';
+  if(i>0 && !isSentEnd(tokens[i-1])) before = tokens[i-1].text;
+  if(i+1<tokens.length && !isSentEnd(tokens[i])) after = tokens[i+1].text;
+  return {before:before, after:after};
+}
 
 // ── ORP (re-used for multi-word chunks) ───────────────────────────────
 function orp(word){
@@ -169,7 +180,10 @@ function show(tok){
   if(words.length > 1){
     wordRow.style.display = 'none';
     multiRow.style.display = 'flex';
-    multiRow.innerHTML = words.map(function(w,i){
+    var mctx = phantomOn ? phantomContext(idx) : {before:'',after:''};
+    var mhtml = '';
+    if(mctx.before) mhtml += '<span class="phantom">'+esc(mctx.before)+'</span><span>&nbsp;</span>';
+    mhtml += words.map(function(w,i){
       var oi = orp(w);
       return (i?'<span>&nbsp;</span>':'')
         +'<span class="mw-group">'
@@ -178,14 +192,17 @@ function show(tok){
         +'<span class="mw-suf">'+esc(w.slice(oi+1))+'</span>'
         +'</span>';
     }).join('');
+    if(mctx.after) mhtml += '<span>&nbsp;</span><span class="phantom">'+esc(mctx.after)+'</span>';
+    multiRow.innerHTML = mhtml;
     flash(multiRow);
   } else {
     multiRow.style.display = 'none';
     wordRow.style.display = 'flex';
     var oi = tok.orpIndex;
-    wp.textContent = tok.text.slice(0,oi);
+    var ctx = phantomOn ? phantomContext(idx) : {before:'',after:''};
+    wp.innerHTML = (ctx.before ? '<span class="phantom">'+esc(ctx.before)+' </span>' : '') + esc(tok.text.slice(0,oi));
     wo.textContent = tok.text[oi]||'';
-    ws.textContent = tok.text.slice(oi+1);
+    ws.innerHTML = esc(tok.text.slice(oi+1)) + (ctx.after ? '<span class="phantom"> '+esc(ctx.after)+'</span>' : '');
     flash(wordRow);
   }
   var pct = tokens.length ? Math.round((idx+1)/tokens.length*100) : 0;
@@ -264,8 +281,6 @@ function pause(){
 function toggle(){ playing?pause():play(); }
 
 // ── sentence navigation ───────────────────────────────────────────────
-function isSentEnd(t){ return t.isSectionEnd||t.isParagraphEnd||/[.!?]["')\\]}>]?$/.test(t.text); }
-
 function seekBack(){
   clearTimeout(timer);
   sectionBreakPending=false;
