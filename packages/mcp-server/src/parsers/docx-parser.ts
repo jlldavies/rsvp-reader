@@ -24,7 +24,7 @@ export async function parseDocx(buffer: Buffer, uri: string): Promise<RsvpDocume
     id: generateDocumentId(uri + result.value.slice(0, 200)),
     source: { type: 'docx', uri },
     title: doc.title === 'Untitled Document'
-      ? (uri.replace(/\.docx$/i, '').split('/').pop() || 'Word Document')
+      ? (uri.replace(/\.docx$/i, '').split(/[/\\]/).pop() || 'Word Document')
       : doc.title,
   };
 }

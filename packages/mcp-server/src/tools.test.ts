@@ -77,9 +77,9 @@ describe('buildReaderUrl', () => {
     expect(url).toContain('4567');
   });
 
-  it('points to localhost', () => {
+  it('points to the IPv4 loopback (not "localhost", which is IPv6 ::1 on Windows)', () => {
     const url = buildReaderUrl(3000, 'doc-abc');
-    expect(url).toContain('localhost');
+    expect(url).toContain('127.0.0.1');
   });
 });
 

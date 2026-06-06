@@ -52,9 +52,13 @@ export function parseSpeedReadInput(input: Record<string, unknown>): ParsedInput
 
 /**
  * Build the local reader URL for a given document id.
+ *
+ * Use 127.0.0.1 (not "localhost") so it matches the IPv4 address the web server
+ * binds to. On Windows, "localhost" resolves to IPv6 ::1 first, which the server
+ * isn't listening on, so the opened browser tab would get connection-refused.
  */
 export function buildReaderUrl(port: number, docId: string): string {
-  return `http://localhost:${port}/?doc=${encodeURIComponent(docId)}`;
+  return `http://127.0.0.1:${port}/?doc=${encodeURIComponent(docId)}`;
 }
 
 /**

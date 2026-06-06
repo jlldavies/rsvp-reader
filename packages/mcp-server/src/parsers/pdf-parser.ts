@@ -31,7 +31,7 @@ export async function parsePdf(buffer: Buffer, uri: string): Promise<RsvpDocumen
 
   const sections = tokenizePlainText(text);
   const totalWords = sections.reduce((sum, s) => sum + s.tokens.length, 0);
-  const title = uri.replace(/\.pdf$/i, '').split('/').pop() || 'PDF Document';
+  const title = uri.replace(/\.pdf$/i, '').split(/[/\\]/).pop() || 'PDF Document';
 
   return {
     id: generateDocumentId(uri + text.slice(0, 200)),

@@ -52,7 +52,7 @@ export async function parsePptx(buffer: Buffer, uri: string): Promise<RsvpDocume
 
   const sections: Section[] = tokenizeSections(rawSections);
   const totalWords = sections.reduce((sum, s) => sum + s.tokens.length, 0);
-  const title = uri.replace(/\.pptx$/i, '').split('/').pop() || 'Presentation';
+  const title = uri.replace(/\.pptx$/i, '').split(/[/\\]/).pop() || 'Presentation';
 
   const allText = rawSections.flatMap(s => s.paragraphs).join(' ');
 
