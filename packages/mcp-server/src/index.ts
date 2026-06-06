@@ -55,6 +55,10 @@ server.tool(
 
     // Start the web server in parallel with parsing so it's ready when we need it
     const serverPromise = ensureServerRunning();
+    // If parsing below throws before we await this, swallow the rejection here so
+    // a slow/failed server start can't surface as a fatal unhandledRejection and
+    // kill the stdio process. When we DO await it, errors still propagate normally.
+    serverPromise.catch(() => {});
 
     let doc;
 
@@ -140,6 +144,7 @@ server.tool(
   async ({ text, wpm }) => {
     const resolvedWpm = validateWpm(wpm);
     const serverPromise = ensureServerRunning();
+    serverPromise.catch(() => {}); // see speed_read: guard against fatal unhandledRejection
     const doc = await parseText(text.trim(), 'mcp://clipboard');
 
     const port = await serverPromise;

@@ -196,8 +196,11 @@ export async function ensureServerRunning(): Promise<number> {
     res.sendFile(resolve(webDistPath, 'index.html'));
   });
 
-  await new Promise<void>((resolve_) => {
+  await new Promise<void>((resolve_, reject_) => {
     serverInstance = createServer(app);
+    // Surface bind failures (e.g. EACCES/EPERM) as a rejected promise instead of
+    // an uncaught 'error' event, which would crash the process or hang this await.
+    serverInstance.on('error', reject_);
     serverInstance.listen(0, '127.0.0.1', () => {
       const addr = serverInstance!.address();
       currentPort = typeof addr === 'object' && addr ? addr.port : 0;
