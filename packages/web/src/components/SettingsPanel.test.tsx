@@ -106,6 +106,62 @@ describe('SettingsPanel — section pause mode', () => {
   });
 });
 
+describe('SettingsPanel — phantom (context) words', () => {
+  it('renders a context words toggle', () => {
+    render(<SettingsPanel {...makeProps()} />);
+    expect(screen.getByLabelText(/context words/i)).toBeInTheDocument();
+  });
+
+  it('toggling calls onSettingChange with phantomWords', () => {
+    const props = makeProps({ phantomWords: true });
+    render(<SettingsPanel {...props} />);
+    fireEvent.click(screen.getByLabelText(/context words/i));
+    expect(props.onSettingChange).toHaveBeenCalledWith('phantomWords', false);
+  });
+
+  it('renders a context word color input', () => {
+    render(<SettingsPanel {...makeProps()} />);
+    expect(screen.getByLabelText(/context word color/i)).toBeInTheDocument();
+  });
+
+  it('changing context word color calls onSettingChange', () => {
+    const props = makeProps({ phantomColor: '#bbbbbb' });
+    render(<SettingsPanel {...props} />);
+    fireEvent.change(screen.getByLabelText(/context word color/i), {
+      target: { value: '#222222' },
+    });
+    expect(props.onSettingChange).toHaveBeenCalledWith('phantomColor', '#222222');
+  });
+});
+
+describe('SettingsPanel — focus brackets', () => {
+  it('renders a focus brackets toggle', () => {
+    render(<SettingsPanel {...makeProps()} />);
+    expect(screen.getByLabelText(/focus brackets/i)).toBeInTheDocument();
+  });
+
+  it('toggling brackets calls onSettingChange with focusBrackets', () => {
+    const props = makeProps({ focusBrackets: true });
+    render(<SettingsPanel {...props} />);
+    fireEvent.click(screen.getByLabelText(/focus brackets/i));
+    expect(props.onSettingChange).toHaveBeenCalledWith('focusBrackets', false);
+  });
+
+  it('renders a bracket color input', () => {
+    render(<SettingsPanel {...makeProps()} />);
+    expect(screen.getByLabelText(/bracket color/i)).toBeInTheDocument();
+  });
+
+  it('changing bracket color calls onSettingChange', () => {
+    const props = makeProps({ focusBracketColor: '#888888' });
+    render(<SettingsPanel {...props} />);
+    fireEvent.change(screen.getByLabelText(/bracket color/i), {
+      target: { value: '#ff00ff' },
+    });
+    expect(props.onSettingChange).toHaveBeenCalledWith('focusBracketColor', '#ff00ff');
+  });
+});
+
 describe('SettingsPanel — reset button', () => {
   it('renders a reset button', () => {
     render(<SettingsPanel {...makeProps()} />);

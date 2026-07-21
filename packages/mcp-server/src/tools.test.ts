@@ -5,6 +5,7 @@ import {
   validateWpm,
   validateChunkSize,
 } from './tools';
+import { generateArtifact, type ArtifactSection } from './artifact-template';
 
 describe('parseSpeedReadInput — text input', () => {
   it('accepts plain text via text field', () => {
@@ -116,5 +117,117 @@ describe('validateChunkSize', () => {
 
   it('throws for invalid chunk size', () => {
     expect(() => validateChunkSize(5)).toThrow();
+  });
+});
+
+// ─── Artifact parity with the web app ────────────────────────────────────────
+// The artifact embeds a self-contained vanilla-JS rewrite of RsvpDisplay +
+// RsvpEngine.buildTokenContext. These tests verify that the generated HTML
+// includes the same features as the web app so behavior stays in sync.
+
+function makeArtifact(): string {
+  const sections: ArtifactSection[] = [
+    {
+      heading: null,
+      tokens: [
+        { text: 'one', orpIndex: 1, displayMs: 200, isParagraphEnd: false, isSectionEnd: false },
+        { text: 'two', orpIndex: 1, displayMs: 200, isParagraphEnd: false, isSectionEnd: false },
+        { text: 'three.', orpIndex: 1, displayMs: 200, isParagraphEnd: false, isSectionEnd: true },
+      ],
+    },
+  ];
+  return generateArtifact(sections, 'Test Doc', 300);
+}
+
+describe('generateArtifact — contains shared web defaults', () => {
+  it('uses the same default phantom color as web', () => {
+    expect(makeArtifact()).toContain('#bbbbbb');
+  });
+
+  it('uses the same default bracket color as web', () => {
+    expect(makeArtifact()).toContain('#888888');
+  });
+
+  it('uses the same default ORP color as web', () => {
+    expect(makeArtifact()).toContain('#ff2c2c');
+  });
+
+  it('uses the same default light background as web', () => {
+    expect(makeArtifact()).toContain('#fafafa');
+  });
+
+  it('uses the same default font family as web', () => {
+    expect(makeArtifact()).toContain('IBM Plex Mono');
+  });
+
+  it('embeds the document title', () => {
+    expect(makeArtifact()).toContain('Test Doc');
+  });
+
+  it('embeds the initial WPM', () => {
+    const html = generateArtifact([{ heading: null, tokens: [] }], 'x', 425);
+    expect(html).toContain('425');
+  });
+});
+
+describe('generateArtifact — feature parity with web RsvpDisplay', () => {
+  it('renders focus brackets by default', () => {
+    const html = makeArtifact();
+    expect(html).toContain('SHOW_BRACKETS = true');
+    expect(html).toContain("'<span class=\"bracket\">[</span>'");
+    expect(html).toContain("'<span class=\"bracket\">]</span>'");
+  });
+
+  it('renders phantom (context) words by default', () => {
+    expect(makeArtifact()).toContain('SHOW_PHANTOM = true');
+  });
+
+  it('uses non-breaking space at flex-cell boundaries', () => {
+    const html = makeArtifact();
+    // A &nbsp; span is used between phantom and current word
+    expect(html).toContain('&nbsp;');
+    expect(html).toContain("var sep = '<span>&nbsp;</span>'");
+  });
+
+  it('uses the center-anchored side-zone layout for multi-word', () => {
+    const html = makeArtifact();
+    expect(html).toContain('mw-side-left');
+    expect(html).toContain('mw-side-right');
+    expect(html).toContain('mw-center');
+  });
+
+  it('uses prefix:1 / orp:1ch / suffix:2 ratio for single-word', () => {
+    const html = makeArtifact();
+    expect(html).toContain('zone-left');
+    expect(html).toContain('zone-orp');
+    expect(html).toContain('zone-right');
+    expect(html).toMatch(/\.zone-left\{[^}]*flex:1/);
+    expect(html).toMatch(/\.zone-right\{[^}]*flex:2/);
+  });
+
+  it('uses overflow:hidden + flex-shrink:0 inner pattern for clipping', () => {
+    const html = makeArtifact();
+    expect(html).toMatch(/overflow:hidden/);
+    expect(html).toContain('flex-shrink:0');
+  });
+});
+
+describe('generateArtifact — phantom context matches engine', () => {
+  it('gathers multiple before/after tokens with sentence bounds', () => {
+    const html = makeArtifact();
+    // Engine and artifact share this algorithm: multi-token gather, sentence-bounded
+    expect(html).toContain('phantomContext');
+    expect(html).toContain('MAX_LOOKAHEAD');
+    expect(html).toContain('beforeParts.unshift');
+    expect(html).toContain('afterParts.push');
+    expect(html).toContain('isSentEnd');
+  });
+
+  it('respects the sentence boundary in both directions', () => {
+    const html = makeArtifact();
+    // Backward walk breaks on isSentEnd
+    expect(html).toMatch(/for\s*\(var b=i-1;[^)]*\)\s*\{\s*var tb = tokens\[b\];\s*if\s*\(isSentEnd\(tb\)\)\s*break/);
+    // Forward walk includes the sentence-ending token then breaks
+    expect(html).toMatch(/afterParts\.push\(ta\.text\);\s*if\s*\(isSentEnd\(ta\)\)\s*break/);
   });
 });

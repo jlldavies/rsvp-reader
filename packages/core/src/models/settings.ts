@@ -13,6 +13,9 @@ export interface ReaderSettings {
   font: string;
   fontSize: number;
   phantomWords: boolean;
+  phantomColor: string;
+  focusBrackets: boolean;
+  focusBracketColor: string;
 }
 
 export const DEFAULT_SETTINGS: ReaderSettings = {
@@ -30,4 +33,7 @@ export const DEFAULT_SETTINGS: ReaderSettings = {
   font: "'IBM Plex Mono', 'Roboto Mono', Courier, monospace",
   fontSize: 56,
   phantomWords: true,
+  phantomColor: '#bbbbbb',
+  focusBrackets: true,
+  focusBracketColor: '#888888',
 };

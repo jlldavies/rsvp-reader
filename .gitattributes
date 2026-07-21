@@ -1,0 +1,15 @@
+# Normalize all text files to LF in the repo and on checkout — keeps the
+# working tree consistent across macOS and Windows (this folder syncs via
+# Dropbox between both).
+* text=auto eol=lf
+
+# Binary files — git should not try to convert them.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.woff binary
+*.woff2 binary

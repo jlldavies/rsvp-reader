@@ -4,6 +4,13 @@
  * All logic is vanilla JS — no external dependencies, no server calls.
  * The document data is embedded as JSON so the artifact works offline
  * inside Claude's artifact iframe.
+ *
+ * Behavior mirrors the web app's RsvpDisplay component:
+ *  - phantom (context) words gathered up to nearest sentence boundary
+ *  - focus brackets [...] around the current word(s)
+ *  - same layout: prefix flex:1 right-anchored, ORP 1ch, suffix flex:2 left-anchored
+ *  - multi-word centered with side phantom zones
+ *  - non-breaking spaces at flex-cell boundaries
  */
 
 export interface ArtifactSection {
@@ -17,13 +24,25 @@ export interface ArtifactSection {
   }>;
 }
 
+// Defaults match DEFAULT_SETTINGS in @rsvp-reader/core
+const DEFAULTS = {
+  background: '#fafafa',
+  textColor: '#333333',
+  orpColor: '#ff2c2c',
+  phantomColor: '#bbbbbb',
+  bracketColor: '#888888',
+  showBrackets: true,
+  showPhantom: true,
+  fontFamily: "'IBM Plex Mono', 'Roboto Mono', Courier, monospace",
+  fontSize: 52,
+  maxLookahead: 12,
+};
+
 export function generateArtifact(
   sections: ArtifactSection[],
   title: string,
   initialWpm: number
 ): string {
-  // Escape the doc JSON so it can be safely embedded inside a <script> tag.
-  // Replace </script> sequences that would break the surrounding tag.
   const docJson = JSON.stringify({ title, sections }).replace(/<\/script>/gi, '<\\/script>');
 
   return `<!DOCTYPE html>
@@ -34,56 +53,61 @@ export function generateArtifact(
 <title>${title.replace(/</g, '&lt;')}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0f172a;color:#f1f5f9;font-family:'IBM Plex Mono','Courier New',monospace;
+body{background:${DEFAULTS.background};color:${DEFAULTS.textColor};font-family:${DEFAULTS.fontFamily};
   display:flex;flex-direction:column;height:100vh;overflow:hidden;user-select:none}
 
-#doc-title{padding:8px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #334155;
+#doc-title{padding:8px 16px;font-size:13px;color:#666;border-bottom:1px solid #ddd;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
 
 #prog-wrap{padding:4px 16px 0;flex-shrink:0}
-#prog-track{height:4px;background:#334155;border-radius:2px;cursor:pointer}
-#prog-fill{height:100%;background:#60a5fa;border-radius:2px;transition:width .1s linear;width:0%}
+#prog-track{height:4px;background:#e5e5e5;border-radius:2px;cursor:pointer}
+#prog-fill{height:100%;background:#2563eb;border-radius:2px;transition:width .1s linear;width:0%}
 #prog-labels{display:flex;justify-content:space-between;margin-top:3px}
-#prog-pct,#prog-time{font-size:11px;color:#64748b}
+#prog-pct,#prog-time{font-size:11px;color:#999}
 
 #display{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:20px;min-height:0}
 
 .reticle{display:flex;width:100%;align-items:center;margin:8px 0}
-.rl{height:1px;background:#94a3b8;opacity:.3}
+.rl{height:1px;background:#aaa;opacity:.35}
 .rl.left{flex:1}.rl.right{flex:2}
 .rg{width:1ch;flex-shrink:0}
 
-#word-row{display:flex;width:100%;align-items:baseline;font-size:52px;font-weight:400;line-height:1.2}
-#wp{flex:1;text-align:right;color:#cbd5e1;overflow:hidden;white-space:nowrap;min-width:0}
-#wo{width:1ch;text-align:center;flex-shrink:0;color:#ff2c2c}
-#ws{flex:2;text-align:left;color:#cbd5e1;overflow:hidden;white-space:nowrap;min-width:0}
-.phantom{color:#94a3b8;opacity:.25}
+/* Single-word layout: prefix:1 / orp:1ch / suffix:2 — overflow clipped on outside */
+#word-row{display:flex;width:100%;align-items:baseline;font-size:${DEFAULTS.fontSize}px;font-weight:400;line-height:1.2}
+.zone-left{flex:1;display:flex;justify-content:flex-end;align-items:baseline;min-width:0;overflow:hidden}
+.zone-orp{flex-shrink:0;width:1ch;text-align:center;color:${DEFAULTS.orpColor}}
+.zone-right{flex:2;display:flex;justify-content:flex-start;align-items:baseline;min-width:0;overflow:hidden}
+.inner{flex-shrink:0;white-space:nowrap}
 
-/* multi-word mode */
-#multi-row{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;
-  font-size:52px;font-weight:400;max-width:90vw;display:none}
+/* Multi-word layout: words anchored at center, phantoms in clippable side zones */
+#multi-row{display:none;width:100%;align-items:baseline;font-size:${DEFAULTS.fontSize}px;font-weight:400;line-height:1.2}
+.mw-side-left{flex:1;display:flex;justify-content:flex-end;align-items:baseline;min-width:0;overflow:hidden}
+.mw-center{flex-shrink:0;white-space:nowrap}
+.mw-side-right{flex:1;display:flex;justify-content:flex-start;align-items:baseline;min-width:0;overflow:hidden}
 .mw-group{white-space:nowrap}
-.mw-pre,.mw-suf{color:#cbd5e1}
-.mw-orp{color:#ff2c2c}
+.mw-orp{color:${DEFAULTS.orpColor}}
+
+.phantom{color:${DEFAULTS.phantomColor}}
+.bracket{color:${DEFAULTS.bracketColor}}
 
 #section-break{display:none;text-align:center;flex-direction:column;
   align-items:center;justify-content:center;gap:12px;flex:1}
-#section-break h2{font-size:26px;font-weight:600;color:#f1f5f9}
-#section-break p{font-size:14px;color:#94a3b8}
+#section-break h2{font-size:26px;font-weight:600;color:${DEFAULTS.textColor}}
+#section-break p{font-size:14px;color:#666}
 
-#placeholder{font-size:16px;color:#64748b;font-style:italic}
+#placeholder{font-size:16px;color:#999;font-style:italic}
 
 #controls{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:10px;
-  padding:12px 20px;border-top:1px solid #334155;background:#1e293b}
+  padding:12px 20px;border-top:1px solid #ddd;background:#f5f5f5}
 .btn-row{display:flex;align-items:center;gap:12px}
-button{background:none;border:1px solid #475569;color:#f1f5f9;border-radius:8px;
+button{background:none;border:1px solid #ccc;color:${DEFAULTS.textColor};border-radius:8px;
   padding:5px 14px;font-size:18px;cursor:pointer;line-height:1.4}
-button:hover{border-color:#60a5fa}
-#play-btn{background:#2563eb;border:none;border-radius:10px;padding:7px 22px;font-size:22px}
-#wpm-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#94a3b8}
-#wpm-slider{width:150px;cursor:pointer;accent-color:#60a5fa}
-#key-hint{font-size:10px;color:#475569}
+button:hover{border-color:#2563eb}
+#play-btn{background:#2563eb;color:#fff;border:none;border-radius:10px;padding:7px 22px;font-size:22px}
+#wpm-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#666}
+#wpm-slider{width:150px;cursor:pointer;accent-color:#2563eb}
+#key-hint{font-size:10px;color:#999}
 
 @keyframes flash{from{opacity:.15}to{opacity:1}}
 .flash{animation:flash 80ms ease-out}
@@ -101,9 +125,15 @@ button:hover{border-color:#60a5fa}
 <div id="display">
   <div class="reticle"><div class="rl left"></div><div class="rg"></div><div class="rl right"></div></div>
   <div id="word-row">
-    <span id="wp"></span><span id="wo"></span><span id="ws"></span>
+    <div class="zone-left"><span class="inner" id="wp"></span></div>
+    <span class="zone-orp" id="wo"></span>
+    <div class="zone-right"><span class="inner" id="ws"></span></div>
   </div>
-  <div id="multi-row"></div>
+  <div id="multi-row">
+    <div class="mw-side-left"><span class="inner" id="mw-l"></span></div>
+    <div class="mw-center" id="mw-c"></div>
+    <div class="mw-side-right"><span class="inner" id="mw-r"></span></div>
+  </div>
   <div id="section-break">
     <h2 id="sb-heading">Next Section</h2>
     <p>Press Space to continue</p>
@@ -132,21 +162,38 @@ const DOC = ${docJson};
 // ── flatten tokens ─────────────────────────────────────────────────────
 const tokens = DOC.sections.flatMap(function(s){ return s.tokens; });
 let idx = 0, playing = false, wpm = ${initialWpm}, timer = null;
-let sectionBreakPending = false, sbHeading = '';
-let phantomOn = true;
+let sectionBreakPending = false;
+
+const SHOW_PHANTOM = ${DEFAULTS.showPhantom};
+const SHOW_BRACKETS = ${DEFAULTS.showBrackets};
+const MAX_LOOKAHEAD = ${DEFAULTS.maxLookahead};
 
 function isSentEnd(t){ return t.isSectionEnd||t.isParagraphEnd||/[.!?]["')\\]}>]?$/.test(t.text); }
 
+// Gather multi-token before/after context, sentence-bounded.
+// Mirrors RsvpEngine.buildTokenContext in core.
 function phantomContext(i){
-  var before = '', after = '';
-  if(i>0 && !isSentEnd(tokens[i-1])) before = tokens[i-1].text;
-  if(i+1<tokens.length && !isSentEnd(tokens[i])) after = tokens[i+1].text;
-  return {before:before, after:after};
+  var beforeParts = [], afterParts = [];
+  // before: walk backward, stop at sentence-ending token
+  for(var b=i-1; b>=0 && beforeParts.length<MAX_LOOKAHEAD; b--){
+    var tb = tokens[b];
+    if(isSentEnd(tb)) break;
+    beforeParts.unshift(tb.text);
+  }
+  // after: walk forward, include up to and including next sentence-ending token
+  if(!isSentEnd(tokens[i])){
+    for(var a=i+1; a<tokens.length && afterParts.length<MAX_LOOKAHEAD; a++){
+      var ta = tokens[a];
+      afterParts.push(ta.text);
+      if(isSentEnd(ta)) break;
+    }
+  }
+  return {before:beforeParts.join(' '), after:afterParts.join(' ')};
 }
 
 // ── ORP (re-used for multi-word chunks) ───────────────────────────────
 function orp(word){
-  var s = word.replace(/^[^a-zA-Z0-9\u00C0-\u00FF]+|[^a-zA-Z0-9\u00C0-\u00FF]+$/g,'');
+  var s = word.replace(/^[^a-zA-Z0-9À-ÿ]+|[^a-zA-Z0-9À-ÿ]+$/g,'');
   var n = (s||word).length;
   return n<=1?0:n<=5?1:n<=9?2:n<=13?3:4;
 }
@@ -161,6 +208,9 @@ var wp = document.getElementById('wp');
 var wo = document.getElementById('wo');
 var ws = document.getElementById('ws');
 var multiRow = document.getElementById('multi-row');
+var mwL = document.getElementById('mw-l');
+var mwC = document.getElementById('mw-c');
+var mwR = document.getElementById('mw-r');
 var sbEl   = document.getElementById('section-break');
 var sbHead = document.getElementById('sb-heading');
 var phEl   = document.getElementById('placeholder');
@@ -172,37 +222,44 @@ var progTrack = document.getElementById('prog-track');
 titleEl.textContent = DOC.title || 'Document';
 phEl.style.display = 'none';
 
+function esc(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 // ── display a token ───────────────────────────────────────────────────
+// Layout matches web RsvpDisplay: cell-boundary spaces use &nbsp; (never trimmed).
 function show(tok){
   if(!tok) return;
   sbEl.style.display = 'none';
+  var ctx = SHOW_PHANTOM ? phantomContext(idx) : {before:'',after:''};
   var words = tok.text.split(' ');
+  var bracketOpen = SHOW_BRACKETS ? '<span class="bracket">[</span>' : '';
+  var bracketClose = SHOW_BRACKETS ? '<span class="bracket">]</span>' : '';
+  // Non-breaking space at cell boundaries to avoid trimming
+  var sep = '<span>&nbsp;</span>';
+
   if(words.length > 1){
     wordRow.style.display = 'none';
     multiRow.style.display = 'flex';
-    var mctx = phantomOn ? phantomContext(idx) : {before:'',after:''};
-    var mhtml = '';
-    if(mctx.before) mhtml += '<span class="phantom">'+esc(mctx.before)+'</span><span>&nbsp;</span>';
-    mhtml += words.map(function(w,i){
+    mwL.innerHTML = (ctx.before ? '<span class="phantom">'+esc(ctx.before)+'</span>'+sep : '') + bracketOpen;
+    mwC.innerHTML = words.map(function(w,i){
       var oi = orp(w);
       return (i?'<span>&nbsp;</span>':'')
         +'<span class="mw-group">'
-        +'<span class="mw-pre">'+esc(w.slice(0,oi))+'</span>'
+        +esc(w.slice(0,oi))
         +'<span class="mw-orp">'+esc(w[oi]||'')+'</span>'
-        +'<span class="mw-suf">'+esc(w.slice(oi+1))+'</span>'
+        +esc(w.slice(oi+1))
         +'</span>';
     }).join('');
-    if(mctx.after) mhtml += '<span>&nbsp;</span><span class="phantom">'+esc(mctx.after)+'</span>';
-    multiRow.innerHTML = mhtml;
+    mwR.innerHTML = bracketClose + (ctx.after ? sep+'<span class="phantom">'+esc(ctx.after)+'</span>' : '');
     flash(multiRow);
   } else {
     multiRow.style.display = 'none';
     wordRow.style.display = 'flex';
     var oi = tok.orpIndex;
-    var ctx = phantomOn ? phantomContext(idx) : {before:'',after:''};
-    wp.innerHTML = (ctx.before ? '<span class="phantom">'+esc(ctx.before)+' </span>' : '') + esc(tok.text.slice(0,oi));
+    var beforeHtml = ctx.before ? '<span class="phantom">'+esc(ctx.before)+'</span>'+sep : '';
+    var afterHtml  = ctx.after  ? sep+'<span class="phantom">'+esc(ctx.after)+'</span>'  : '';
+    wp.innerHTML = beforeHtml + bracketOpen + esc(tok.text.slice(0,oi));
     wo.textContent = tok.text[oi]||'';
-    ws.innerHTML = esc(tok.text.slice(oi+1)) + (ctx.after ? '<span class="phantom"> '+esc(ctx.after)+'</span>' : '');
+    ws.innerHTML = esc(tok.text.slice(oi+1)) + bracketClose + afterHtml;
     flash(wordRow);
   }
   var pct = tokens.length ? Math.round((idx+1)/tokens.length*100) : 0;
@@ -214,9 +271,6 @@ function show(tok){
   progTime.textContent = m+':'+(s<10?'0':'')+s+' left';
 }
 
-function esc(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-var lastKey = 0;
 function flash(el){
   el.classList.remove('flash');
   void el.offsetWidth;
@@ -245,7 +299,6 @@ function scheduleNext(){
       playing = false;
       playBtn.textContent = '\\u25B6';
       idx++;
-      // find heading of next section
       var nxtSec = '';
       for(var si=0;si<DOC.sections.length;si++){
         var sc=DOC.sections[si];
@@ -285,8 +338,6 @@ function seekBack(){
   clearTimeout(timer);
   sectionBreakPending=false;
   sbEl.style.display='none';
-  wordRow.style.display='flex';
-  multiRow.style.display='none';
   var i=idx-1;
   if(i>=0 && isSentEnd(tokens[i])) i--;
   while(i>0 && !isSentEnd(tokens[i])) i--;
@@ -299,8 +350,6 @@ function seekFwd(){
   clearTimeout(timer);
   sectionBreakPending=false;
   sbEl.style.display='none';
-  wordRow.style.display='flex';
-  // table detection: many pipes or mostly numeric in next 15 tokens
   var ahead = tokens.slice(idx, idx+15);
   var pipes  = ahead.filter(function(t){return t.text.includes('|');}).length;
   var nums   = ahead.filter(function(t){return /^[\\d,.$%+\\-/:=]+$/.test(t.text);}).length;

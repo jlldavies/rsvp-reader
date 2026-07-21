@@ -6,6 +6,11 @@ export const RsvpDisplay: React.FC = () => {
   const { currentToken, settings, engineState, currentSectionHeading, beforeText, afterText } =
     useReaderStore();
   const showPhantom = settings.phantomWords;
+  const phantomColor = settings.phantomColor;
+  const showBrackets = settings.focusBrackets;
+  const bracketColor = settings.focusBracketColor;
+  const phantomStyle: React.CSSProperties = { color: phantomColor };
+  const phantomInlineStyle: React.CSSProperties = { color: phantomColor, whiteSpace: 'nowrap' };
 
   if (engineState === 'section-break') {
     return (
@@ -41,8 +46,13 @@ export const RsvpDisplay: React.FC = () => {
     lineHeight: 1.2,
   };
 
+  // Use full phantom text — CSS overflow:hidden on the prefix/suffix flex cells
+  // clips from the correct side (left for before, right for after).
+  const phantomBefore = beforeText;
+  const phantomAfter = afterText;
+
   if (isMultiWord) {
-    // Multi-word: each word gets its own ORP highlight, displayed as a centred row
+    // Multi-word: words anchored at center, phantoms in side zones that clip on overflow.
     return (
       <div style={styles.container}>
         <div
@@ -50,42 +60,56 @@ export const RsvpDisplay: React.FC = () => {
           className="rsvp-flash"
           style={{ ...styles.multiWordRow, ...fontStyle }}
         >
-          {showPhantom && beforeText && (
-            <><span style={styles.phantomInline}>{beforeText}</span><span>&nbsp;</span></>
-          )}
-          {words.map((word, i) => {
-            const oi = calculateOrp(word);
-            const wp = word.slice(0, oi);
-            const wo = word[oi] ?? '';
-            const ws = word.slice(oi + 1);
-            return (
-              <React.Fragment key={i}>
-                {i > 0 && <span>&nbsp;</span>}
-                <span style={styles.wordGroup}>
-                  <span style={{ color: 'var(--color-word-prefix)' }}>{wp}</span>
-                  <span style={{ color: settings.orpColor }}>{wo}</span>
-                  <span style={{ color: 'var(--color-word-suffix)' }}>{ws}</span>
-                </span>
-              </React.Fragment>
-            );
-          })}
-          {showPhantom && afterText && (
-            <><span>&nbsp;</span><span style={styles.phantomInline}>{afterText}</span></>
-          )}
+          <div style={styles.multiSideLeft}>
+            <span style={styles.prefixInner}>
+              {showPhantom && phantomBefore && (
+                <>
+                  <span style={phantomStyle}>{phantomBefore}</span>
+                  <span>{' '}</span>
+                </>
+              )}
+              {showBrackets && <span style={{ color: bracketColor }}>[</span>}
+            </span>
+          </div>
+          <div style={styles.multiCenter}>
+            {words.map((word, i) => {
+              const oi = calculateOrp(word);
+              const wp = word.slice(0, oi);
+              const wo = word[oi] ?? '';
+              const ws = word.slice(oi + 1);
+              return (
+                <React.Fragment key={i}>
+                  {i > 0 && <span>&nbsp;</span>}
+                  <span style={styles.wordGroup}>
+                    <span style={{ color: 'var(--color-word-prefix)' }}>{wp}</span>
+                    <span style={{ color: settings.orpColor }}>{wo}</span>
+                    <span style={{ color: 'var(--color-word-suffix)' }}>{ws}</span>
+                  </span>
+                </React.Fragment>
+              );
+            })}
+          </div>
+          <div style={styles.multiSideRight}>
+            <span style={styles.suffixInner}>
+              {showBrackets && <span style={{ color: bracketColor }}>]</span>}
+              {showPhantom && phantomAfter && (
+                <>
+                  <span>&nbsp;</span>
+                  <span style={phantomStyle}>{phantomAfter}</span>
+                </>
+              )}
+            </span>
+          </div>
         </div>
       </div>
     );
   }
 
   // Single word: ORP pinned at ~33% from left (flex 1:2 split).
-  // Words typically have more text after the ORP than before, so the right
-  // zone is given twice the space. This matches the research recommendation
-  // of placing the ORP ~35% from the word's left edge.
   const prefix = text.slice(0, orpIndex);
   const orp = text[orpIndex] || '';
   const suffix = text.slice(orpIndex + 1);
 
-  // Row layout: [prefix flex:1 right-aligned] [ORP 1ch] [suffix flex:2 left-aligned]
   const rowStyle: React.CSSProperties = {
     display: 'flex',
     width: '100%',
@@ -93,8 +117,6 @@ export const RsvpDisplay: React.FC = () => {
     ...fontStyle,
   };
 
-  // Reticle lines: thin horizontal guides on either side of the ORP column.
-  // They use the same 1:ORP:2 column layout so they track the red letter exactly.
   const reticleRow = (
     <div style={{ ...rowStyle, alignItems: 'center' }}>
       <div style={{ flex: 1, ...styles.reticleLine }} />
@@ -108,21 +130,27 @@ export const RsvpDisplay: React.FC = () => {
       {reticleRow}
 
       <div key={currentToken.index} className="rsvp-flash" style={rowStyle}>
-        <span style={{ ...styles.prefix, color: 'var(--color-word-prefix)' }}>
-          {showPhantom && beforeText && (
-            <span style={styles.phantom}>{beforeText}{' '}</span>
-          )}
-          {prefix}
-        </span>
+        <div style={styles.prefix}>
+          <span style={styles.prefixInner}>
+            {showPhantom && phantomBefore && (
+              <span style={phantomStyle}>{phantomBefore}{' '}</span>
+            )}
+            {showBrackets && <span style={{ color: bracketColor }}>[</span>}
+            <span style={{ color: 'var(--color-word-prefix)' }}>{prefix}</span>
+          </span>
+        </div>
         <span style={{ ...styles.orp, color: settings.orpColor }}>
           {orp}
         </span>
-        <span style={{ ...styles.suffix, color: 'var(--color-word-suffix)' }}>
-          {suffix}
-          {showPhantom && afterText && (
-            <span style={styles.phantom}>{' '}{afterText}</span>
-          )}
-        </span>
+        <div style={styles.suffix}>
+          <span style={styles.suffixInner}>
+            <span style={{ color: 'var(--color-word-suffix)' }}>{suffix}</span>
+            {showBrackets && <span style={{ color: bracketColor }}>]</span>}
+            {showPhantom && phantomAfter && (
+              <span style={phantomStyle}>{' '}{phantomAfter}</span>
+            )}
+          </span>
+        </div>
       </div>
 
       {reticleRow}
@@ -141,12 +169,20 @@ const styles: Record<string, React.CSSProperties> = {
     userSelect: 'none',
     background: 'var(--color-bg)',
   },
-  // Single-word layout: prefix gets 1/3 of width, suffix 2/3
+  // Single-word layout: prefix block gets 1/3 of width (right-aligned), suffix 2/3 (left-aligned)
+  // The inner wrapper has flexShrink:0 so it keeps its full width; combined with
+  // justifyContent on the outer flex container, overflow goes off the correct side
+  // (left for prefix, right for suffix), where overflow:hidden clips it.
   prefix: {
     flex: 1,
-    textAlign: 'right',
+    display: 'flex',
+    justifyContent: 'flex-end',
+    alignItems: 'baseline',
     minWidth: 0,
     overflow: 'hidden',
+  },
+  prefixInner: {
+    flexShrink: 0,
     whiteSpace: 'nowrap',
   },
   orp: {
@@ -156,9 +192,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   suffix: {
     flex: 2,
-    textAlign: 'left',
+    display: 'flex',
+    justifyContent: 'flex-start',
+    alignItems: 'baseline',
     minWidth: 0,
     overflow: 'hidden',
+  },
+  suffixInner: {
+    flexShrink: 0,
     whiteSpace: 'nowrap',
   },
   reticleLine: {
@@ -170,24 +211,34 @@ const styles: Record<string, React.CSSProperties> = {
     width: '1ch',
     flexShrink: 0,
   },
-  // Multi-word layout: centred flex row
+  // Multi-word layout: words anchored at center, phantoms in clippable side zones.
   multiWordRow: {
     display: 'flex',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    flexWrap: 'nowrap',
     alignItems: 'baseline',
-    maxWidth: '90vw',
+    width: '100%',
   },
-  wordGroup: {
+  multiSideLeft: {
+    flex: 1,
+    display: 'flex',
+    justifyContent: 'flex-end',
+    alignItems: 'baseline',
+    minWidth: 0,
+    overflow: 'hidden',
+  },
+  multiCenter: {
+    flexShrink: 0,
     whiteSpace: 'nowrap',
   },
-  phantom: {
-    color: 'var(--color-text-muted)',
-    opacity: 0.25,
+  multiSideRight: {
+    flex: 1,
+    display: 'flex',
+    justifyContent: 'flex-start',
+    alignItems: 'baseline',
+    minWidth: 0,
+    overflow: 'hidden',
   },
-  phantomInline: {
-    color: 'var(--color-text-muted)',
-    opacity: 0.25,
+  wordGroup: {
     whiteSpace: 'nowrap',
   },
   placeholder: {

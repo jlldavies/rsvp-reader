@@ -29,3 +29,5 @@ playwright-report/
 # Logs
 *.log
 npm-debug.log*
+*.bak.*
+.mcp.json.bak.*

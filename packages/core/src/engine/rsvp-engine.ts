@@ -311,18 +311,33 @@ export class RsvpEngine {
     let beforeText = '';
     let afterText = '';
 
-    // Before: show previous token unless it ended a sentence (or we're at start)
-    if (idx > 0) {
-      const prev = this.flatTokens[idx - 1];
-      if (!this.isSentenceEnd(prev)) {
-        beforeText = prev.text;
+    // Before: gather preceding tokens (in original order) until we hit one that
+    // ended the previous sentence. CSS clips overflow on wide displays we want
+    // enough words to fill the available left-side space.
+    {
+      const parts: string[] = [];
+      const MAX_LOOKBEHIND = 12;
+      for (let i = idx - 1; i >= 0 && parts.length < MAX_LOOKBEHIND; i--) {
+        const t = this.flatTokens[i];
+        if (this.isSentenceEnd(t)) break;
+        parts.unshift(t.text);
       }
+      beforeText = parts.join(' ');
     }
 
-    // After: show next token unless current token ends a sentence (or we're at end)
+    // After: gather following tokens up to and including the next sentence-ending one,
+    // so the renderer has enough text to fill the right-side area. CSS overflow:hidden
+    // clips whatever doesn't fit. We never cross sentence boundaries.
     const current = this.flatTokens[idx];
-    if (idx + 1 < this.flatTokens.length && !this.isSentenceEnd(current)) {
-      afterText = this.flatTokens[idx + 1].text;
+    if (!this.isSentenceEnd(current)) {
+      const parts: string[] = [];
+      const MAX_LOOKAHEAD = 12;
+      for (let i = idx + 1; i < this.flatTokens.length && parts.length < MAX_LOOKAHEAD; i++) {
+        const t = this.flatTokens[i];
+        parts.push(t.text);
+        if (this.isSentenceEnd(t)) break;
+      }
+      afterText = parts.join(' ');
     }
 
     return { beforeText, afterText };

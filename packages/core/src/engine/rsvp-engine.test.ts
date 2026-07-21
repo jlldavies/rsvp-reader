@@ -555,6 +555,96 @@ describe('RsvpEngine — guard clauses', () => {
   });
 });
 
+describe('RsvpEngine — phantom context (before/after)', () => {
+  it('before/after gather multiple tokens within a sentence', () => {
+    const engine = new RsvpEngine();
+    engine.loadDocument(makeDoc('one two three four five six.'));
+    let ctx: { beforeText: string; afterText: string } | null = null;
+    engine.onToken((_, __, c) => { ctx = c; });
+    engine.seekTo(3); // "four"
+    expect(ctx).not.toBeNull();
+    expect(ctx!.beforeText).toBe('one two three');
+    expect(ctx!.afterText.startsWith('five six')).toBe(true);
+    engine.destroy();
+  });
+
+  it('beforeText is empty at start of document', () => {
+    const engine = new RsvpEngine();
+    engine.loadDocument(makeDoc('hello world there'));
+    let ctx: { beforeText: string; afterText: string } | null = null;
+    engine.onToken((_, __, c) => { ctx = c; });
+    engine.seekTo(0);
+    expect(ctx!.beforeText).toBe('');
+    engine.destroy();
+  });
+
+  it('afterText is empty at end of document', () => {
+    const engine = new RsvpEngine();
+    engine.loadDocument(makeDoc('hello world there'));
+    let ctx: { beforeText: string; afterText: string } | null = null;
+    engine.onToken((_, __, c) => { ctx = c; });
+    engine.seekTo(2); // last token
+    expect(ctx!.afterText).toBe('');
+    engine.destroy();
+  });
+
+  it('beforeText does not cross sentence boundary backward', () => {
+    const engine = new RsvpEngine();
+    engine.loadDocument(makeDoc('alpha beta gamma. delta epsilon zeta'));
+    let ctx: { beforeText: string; afterText: string } | null = null;
+    engine.onToken((_, __, c) => { ctx = c; });
+    // "epsilon" is in second sentence — beforeText should only include "delta", not gamma/beta/alpha
+    engine.seekTo(4);
+    expect(ctx!.beforeText).toBe('delta');
+    engine.destroy();
+  });
+
+  it('afterText does not cross sentence boundary forward', () => {
+    const engine = new RsvpEngine();
+    engine.loadDocument(makeDoc('alpha beta gamma. delta epsilon zeta'));
+    let ctx: { beforeText: string; afterText: string } | null = null;
+    engine.onToken((_, __, c) => { ctx = c; });
+    engine.seekTo(0); // "alpha" — first sentence ends at "gamma."
+    // afterText should include "beta gamma." but NOT "delta epsilon zeta"
+    expect(ctx!.afterText).toContain('beta');
+    expect(ctx!.afterText).toContain('gamma');
+    expect(ctx!.afterText).not.toContain('delta');
+    expect(ctx!.afterText).not.toContain('epsilon');
+    engine.destroy();
+  });
+
+  it('afterText includes the sentence-ending token', () => {
+    const engine = new RsvpEngine();
+    engine.loadDocument(makeDoc('one two three.'));
+    let ctx: { beforeText: string; afterText: string } | null = null;
+    engine.onToken((_, __, c) => { ctx = c; });
+    engine.seekTo(0); // "one"
+    expect(ctx!.afterText).toContain('three.');
+    engine.destroy();
+  });
+
+  it('beforeText excludes the previous sentence-ending token', () => {
+    const engine = new RsvpEngine();
+    engine.loadDocument(makeDoc('first sentence. second sentence here'));
+    let ctx: { beforeText: string; afterText: string } | null = null;
+    engine.onToken((_, __, c) => { ctx = c; });
+    engine.seekTo(3); // "sentence" (in "second sentence here")
+    expect(ctx!.beforeText).toBe('second');
+    expect(ctx!.beforeText).not.toContain('sentence.');
+    engine.destroy();
+  });
+
+  it('afterText is empty when current token ends a sentence', () => {
+    const engine = new RsvpEngine();
+    engine.loadDocument(makeDoc('alpha beta gamma. delta'));
+    let ctx: { beforeText: string; afterText: string } | null = null;
+    engine.onToken((_, __, c) => { ctx = c; });
+    engine.seekTo(2); // "gamma." — ends sentence
+    expect(ctx!.afterText).toBe('');
+    engine.destroy();
+  });
+});
+
 describe('RsvpEngine — seekTo emits token immediately', () => {
   it('emits the token at the seeked position immediately', () => {
     const engine = new RsvpEngine();

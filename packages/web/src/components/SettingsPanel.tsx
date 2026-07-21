@@ -118,6 +118,41 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         />
       </div>
 
+      {/* Context word color */}
+      <div style={styles.row}>
+        <label htmlFor="phantom-color" style={styles.label}>Context word color</label>
+        <input
+          id="phantom-color"
+          type="color"
+          value={settings.phantomColor}
+          onChange={(e) => onSettingChange('phantomColor', e.target.value)}
+          style={styles.colorInput}
+        />
+      </div>
+
+      {/* Focus brackets */}
+      <div style={styles.row}>
+        <label htmlFor="brackets-toggle" style={styles.label}>Focus brackets</label>
+        <input
+          id="brackets-toggle"
+          type="checkbox"
+          checked={settings.focusBrackets}
+          onChange={(e) => onSettingChange('focusBrackets', e.target.checked)}
+        />
+      </div>
+
+      {/* Bracket color */}
+      <div style={styles.row}>
+        <label htmlFor="bracket-color" style={styles.label}>Bracket color</label>
+        <input
+          id="bracket-color"
+          type="color"
+          value={settings.focusBracketColor}
+          onChange={(e) => onSettingChange('focusBracketColor', e.target.value)}
+          style={styles.colorInput}
+        />
+      </div>
+
       {/* Section pause mode */}
       <div style={styles.row}>
         <label htmlFor="section-pause" style={styles.label}>Section pause</label>

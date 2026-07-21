@@ -145,3 +145,90 @@ describe('RsvpDisplay — word display', () => {
     expect(suffixEl).toHaveStyle({ color: 'var(--color-word-suffix)' });
   });
 });
+
+describe('RsvpDisplay — focus brackets', () => {
+  it('renders [ and ] when focusBrackets is true', () => {
+    useReaderStore.setState({
+      currentToken: mockToken('Hello', 1),
+      engineState: 'playing',
+      settings: { ...DEFAULT_SETTINGS, focusBrackets: true },
+    });
+    render(<RsvpDisplay />);
+    expect(screen.getByText('[')).toBeInTheDocument();
+    expect(screen.getByText(']')).toBeInTheDocument();
+  });
+
+  it('does not render brackets when focusBrackets is false', () => {
+    useReaderStore.setState({
+      currentToken: mockToken('Hello', 1),
+      engineState: 'playing',
+      settings: { ...DEFAULT_SETTINGS, focusBrackets: false },
+    });
+    render(<RsvpDisplay />);
+    expect(screen.queryByText('[')).not.toBeInTheDocument();
+    expect(screen.queryByText(']')).not.toBeInTheDocument();
+  });
+
+  it('applies focusBracketColor to brackets', () => {
+    useReaderStore.setState({
+      currentToken: mockToken('Hello', 1),
+      engineState: 'playing',
+      settings: { ...DEFAULT_SETTINGS, focusBrackets: true, focusBracketColor: '#abcdef' },
+    });
+    render(<RsvpDisplay />);
+    expect(screen.getByText('[')).toHaveStyle({ color: '#abcdef' });
+    expect(screen.getByText(']')).toHaveStyle({ color: '#abcdef' });
+  });
+
+  it('renders brackets in multi-word mode', () => {
+    useReaderStore.setState({
+      currentToken: { ...mockToken('foo bar', 1), text: 'foo bar' },
+      engineState: 'playing',
+      settings: { ...DEFAULT_SETTINGS, focusBrackets: true },
+    });
+    render(<RsvpDisplay />);
+    expect(screen.getByText('[')).toBeInTheDocument();
+    expect(screen.getByText(']')).toBeInTheDocument();
+  });
+});
+
+describe('RsvpDisplay — phantom (context) words', () => {
+  it('renders phantom before-text when phantomWords is on', () => {
+    useReaderStore.setState({
+      currentToken: mockToken('middle', 2),
+      engineState: 'playing',
+      beforeText: 'previous',
+      afterText: 'next',
+      settings: { ...DEFAULT_SETTINGS, phantomWords: true },
+    });
+    render(<RsvpDisplay />);
+    expect(screen.getByText('previous')).toBeInTheDocument();
+    expect(screen.getByText('next')).toBeInTheDocument();
+  });
+
+  it('does not render phantom text when phantomWords is off', () => {
+    useReaderStore.setState({
+      currentToken: mockToken('middle', 2),
+      engineState: 'playing',
+      beforeText: 'previous',
+      afterText: 'next',
+      settings: { ...DEFAULT_SETTINGS, phantomWords: false },
+    });
+    render(<RsvpDisplay />);
+    expect(screen.queryByText('previous')).not.toBeInTheDocument();
+    expect(screen.queryByText('next')).not.toBeInTheDocument();
+  });
+
+  it('applies phantomColor to phantom spans', () => {
+    useReaderStore.setState({
+      currentToken: mockToken('middle', 2),
+      engineState: 'playing',
+      beforeText: 'previous',
+      afterText: 'next',
+      settings: { ...DEFAULT_SETTINGS, phantomWords: true, phantomColor: '#123456' },
+    });
+    render(<RsvpDisplay />);
+    expect(screen.getByText('previous')).toHaveStyle({ color: '#123456' });
+    expect(screen.getByText('next')).toHaveStyle({ color: '#123456' });
+  });
+});
