@@ -58,13 +58,13 @@ Five workspaces (four under `packages/`, plus a root `server/`), all TypeScript,
 - `server/src/app.ts` / `server/src/index.ts` - Express app factory and listener.
 - `packages/web/vite.config.ts` - web dev server config (port 3000).
 - `playwright.config.ts` - e2e config (base URL `localhost:3000`, single worker, servers not auto-started).
-- `.mcp.json.example` - template for registering the MCP server with an absolute `dist/index.js` path.
+- `.mcp.json.example` - template for registering the MCP server with an absolute `packages/mcp-server/dist/index.js` path.
 - `scripts/dropbox-ignore.mjs` - postinstall helper that marks `node_modules` so Dropbox does not sync it.
 
 ## Conventions
 
 - ES modules everywhere. Internal imports use explicit `.js` extensions on relative
-  paths (e.g. `./tools.js`) because the compiled output is what runs.
+  paths (e.g. `tools.js`) because the compiled output is what runs.
 - Cross-package dependencies use the workspace `*` protocol; `@rsvp-reader/core` is the
   single source of truth for engine logic. Do not duplicate tokenizing or timing logic
   into web/extension/server.
