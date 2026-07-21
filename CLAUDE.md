@@ -96,6 +96,23 @@ Five workspaces (four under `packages/`, plus a root `server/`), all TypeScript,
   `npx playwright test`.
 - `npm run typecheck` is a fast structural check that does not execute tests.
 
+## MCP servers
+
+This repo PROVIDES an MCP server: `packages/mcp-server` (`@rsvp-reader/mcp-server`),
+a stdio-transport Model Context Protocol server that exposes speed reading to Claude.
+It registers four tools:
+
+- `speed_read` - speed-read a URL, file path (PDF/DOCX/PPTX/Markdown/text), or raw text; opens a browser window with the reader.
+- `speed_read_settings` - configure default WPM and chunk size.
+- `speed_read_clipboard` - speed-read supplied text (clipboard alias of `speed_read`).
+- `speed_read_artifact` - generate a self-contained HTML RSVP reader as an inline artifact.
+
+Build it first (`npm run build:mcp`) so `packages/mcp-server/dist/index.js` exists, then
+consumers register it with `claude mcp add` pointing at that absolute path, for example:
+`claude mcp add --scope user rsvp-reader -- node <repo>/packages/mcp-server/dist/index.js`.
+The repo also ships `.mcp.json.example` as a template; a real `.mcp.json` (project scope)
+contains a machine-specific absolute path and is gitignored - do not commit it.
+
 ## Gotchas
 
 - This repo lives inside a Dropbox-synced tree. `node_modules` must not sync (native
