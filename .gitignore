@@ -34,3 +34,4 @@ npm-debug.log*
 
 # Local/personal agent context — not for the public repo
 /CLAUDE.md
+/docs/CLAUDE-REFERENCE.md
