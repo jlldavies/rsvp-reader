@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { SavedPosition, DocumentProgress, RsvpDocument } from '@rsvp-reader/core';
 
 const STORAGE_KEY = 'rsvp-bookmarks';
@@ -147,15 +147,28 @@ export function useBookmarks() {
     localStorage.removeItem(`rsvp-progress-${docId}`);
   }, []);
 
-  return {
-    getBookmarks,
-    saveBookmark,
-    deleteBookmark,
-    saveProgress,
-    getLastPosition,
-    saveToHistory,
-    getAllHistory,
-    clearHistory,
-    removeFromHistory,
-  };
+  return useMemo(
+    () => ({
+      getBookmarks,
+      saveBookmark,
+      deleteBookmark,
+      saveProgress,
+      getLastPosition,
+      saveToHistory,
+      getAllHistory,
+      clearHistory,
+      removeFromHistory,
+    }),
+    [
+      getBookmarks,
+      saveBookmark,
+      deleteBookmark,
+      saveProgress,
+      getLastPosition,
+      saveToHistory,
+      getAllHistory,
+      clearHistory,
+      removeFromHistory,
+    ]
+  );
 }

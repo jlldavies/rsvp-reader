@@ -12,6 +12,14 @@ export type { RsvpDocument, DocumentSource, Section, RsvpToken } from './models/
 export type { BookmarkStore, DocumentProgress, SavedPosition } from './models/bookmark.js';
 export type { ReaderSettings } from './models/settings.js';
 export { DEFAULT_SETTINGS } from './models/settings.js';
+export type { ReaderToHost, HostToReader } from './models/host-bridge.js';
+export {
+  HOST_BRIDGE_PROTOCOL,
+  isReaderToHost,
+  isHostToReader,
+  isReaderSettings,
+  isPartialReaderSettings,
+} from './models/host-bridge.js';
 
 // Parsers
 export { parseMarkdown } from './parsers/markdown-parser.js';

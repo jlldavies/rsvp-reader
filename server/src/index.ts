@@ -1,9 +1,10 @@
 import 'dotenv/config';
 import { createApp } from './app.js';
+import { readServerConfig } from './config.js';
 
-const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3847;
-const app = createApp();
+const cfg = readServerConfig();
+const app = createApp(cfg);
 
-app.listen(PORT, () => {
-  console.log(`RSVP Reader server running on http://localhost:${PORT}`);
+app.listen(cfg.port, () => {
+  console.log(`RSVP Reader server running on http://localhost:${cfg.port} (mode: ${cfg.mode})`);
 });

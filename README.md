@@ -287,6 +287,46 @@ The artifact version produces a self-contained HTML page that works without any 
 
 ---
 
+## Managed mode
+
+By default the reader runs standalone, exactly as described above. A managing service can
+also embed or drive it — the DCN dashboard (`D:\Dropbox\Code\dashboard`) is the first such
+service. Managed mode is entirely opt-in: with none of the environment variables below set,
+behaviour is unchanged.
+
+### Server environment variables
+
+| Variable | Where | Description |
+|---|---|---|
+| `RSVP_MODE` | `server/.env` | `managed` switches the parse/summarise server's defaults (document TTL, read-once) for a managing host; anything else (including unset) is `standalone`. |
+| `RSVP_DOC_TTL_MS` | `server/.env` | How long a parsed document is retained before eviction. Defaults to 5 minutes in standalone mode, 1 hour in managed mode. |
+| `RSVP_DOC_READ_ONCE` | `server/.env` | `1`/`true` or `0`/`false`. Whether a document is discarded after its first read. Defaults to `true` in standalone mode, `false` in managed mode. |
+| `RSVP_FRAME_ANCESTORS` | `server/.env` | Comma-separated list of origins allowed to iframe the reader (sets the `frame-ancestors` CSP directive). Empty/unset allows none. |
+
+### MCP server environment variables
+
+| Variable | Where | Description |
+|---|---|---|
+| `RSVP_DELIVER_URL` | MCP server env | When set, `speed_read` and friends POST the parsed document to this URL (a managing host's reader endpoint) instead of opening a local browser tab. |
+| `RSVP_DELIVER_TOKEN` | MCP server env | Optional bearer token sent as `Authorization: Bearer <token>` with the `RSVP_DELIVER_URL` request. |
+| `RSVP_OPEN` | MCP server env | Standalone mode only. Set to `0` to skip auto-opening the browser tab after storing the document (the reply still includes the URL). |
+
+### The `?host=1` embed contract
+
+A reader page loaded with `?host=1` in the query string treats itself as embedded: if it has
+a `window.parent` (iframe) or `window.opener` (popped-out window), it establishes a
+`postMessage` bridge to that host instead of relying solely on local storage. Without
+`?host=1`, or without a parent/opener, the reader behaves exactly as standalone.
+
+### The postMessage protocol
+
+Once hosted, the reader and its host exchange typed messages over `postMessage`. Reader → host:
+`rsvp:ready`, `rsvp:opened`, `rsvp:settings`, `rsvp:progress`, `rsvp:finished`. Host → reader:
+`rsvp:init`, `rsvp:settings`. `rsvp:ready` is the only message ever posted to origin `'*'`; every
+other message in either direction is posted only to a verified, learned origin.
+
+---
+
 ## Features
 
 - **ORP highlighting** — key letter in red, aligned consistently across every word

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import type { Request, Response } from 'express';
+import type { Request, Response, RequestHandler } from 'express';
 import { upload } from '../middleware/upload.js';
 import { parseUrl } from '../parsers/url-parser.js';
 import { parsePdf } from '../parsers/pdf-parser.js';
@@ -13,7 +13,11 @@ parseRouter.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok' });
 });
 
-parseRouter.post('/parse', upload.single('file'), async (req: Request, res: Response) => {
+// multer's typings (from the workspace's duplicated @types/express copies —
+// root vs server node_modules) resolve to a structurally different
+// RequestHandler than this file's express import expects; cast rather than
+// fork the typings.
+parseRouter.post('/parse', upload.single('file') as unknown as RequestHandler, async (req: Request, res: Response) => {
   try {
     // File upload mode
     if (req.file) {

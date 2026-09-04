@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useSettings } from './useSettings';
 import { DEFAULT_SETTINGS } from '@rsvp-reader/core';
+import type { ReaderSettings } from '@rsvp-reader/core';
 
 beforeEach(() => {
   localStorage.clear();
@@ -117,6 +118,104 @@ describe('useSettings — persistence', () => {
     localStorage.setItem('rsvp-settings', 'not-valid-json{{{');
     const { result } = renderHook(() => useSettings());
     expect(result.current.settings).toEqual(DEFAULT_SETTINGS);
+  });
+});
+
+describe('useSettings — persist callback', () => {
+  it('calls persist with the merged settings on update', () => {
+    const persist = vi.fn();
+    const { result } = renderHook(() => useSettings(persist));
+    act(() => {
+      result.current.updateSetting('wpm', 450);
+    });
+    expect(persist).toHaveBeenCalledTimes(1);
+    expect(persist).toHaveBeenCalledWith({ ...DEFAULT_SETTINGS, wpm: 450 });
+  });
+
+  it('calls persist with DEFAULT_SETTINGS on resetSettings', () => {
+    const persist = vi.fn();
+    const { result } = renderHook(() => useSettings(persist));
+    act(() => {
+      result.current.updateSetting('wpm', 450);
+    });
+    persist.mockClear();
+    act(() => {
+      result.current.resetSettings();
+    });
+    expect(persist).toHaveBeenCalledWith(DEFAULT_SETTINGS);
+  });
+
+  it('still writes to localStorage when a persist callback is given', () => {
+    const persist = vi.fn();
+    const { result, unmount } = renderHook(() => useSettings(persist));
+    act(() => {
+      result.current.updateSetting('wpm', 620);
+    });
+    unmount();
+
+    const { result: result2 } = renderHook(() => useSettings());
+    expect(result2.current.settings.wpm).toBe(620);
+  });
+
+  it('works with no persist callback (existing callers keep working)', () => {
+    const { result } = renderHook(() => useSettings());
+    act(() => {
+      result.current.updateSetting('wpm', 700);
+    });
+    expect(result.current.settings.wpm).toBe(700);
+  });
+});
+
+describe('useSettings — initial (from host init)', () => {
+  it('merges initial over DEFAULT_SETTINGS when nothing is in localStorage', () => {
+    const { result } = renderHook(() => useSettings(undefined, { wpm: 550, theme: 'dark' }));
+    expect(result.current.settings.wpm).toBe(550);
+    expect(result.current.settings.theme).toBe('dark');
+    expect(result.current.settings.chunkSize).toBe(DEFAULT_SETTINGS.chunkSize);
+  });
+
+  it('merges initial over persisted localStorage settings (initial wins)', () => {
+    localStorage.setItem('rsvp-settings', JSON.stringify({ wpm: 400, chunkSize: 2 }));
+    const { result } = renderHook(() => useSettings(undefined, { wpm: 550 }));
+    expect(result.current.settings.wpm).toBe(550);
+    expect(result.current.settings.chunkSize).toBe(2);
+  });
+
+  it('null initial behaves like no initial at all', () => {
+    const { result } = renderHook(() => useSettings(undefined, null));
+    expect(result.current.settings).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('applies initial when it transitions from null to a value on a later render (async host init)', () => {
+    const { result, rerender } = renderHook(
+      ({ init }: { init: Partial<ReaderSettings> | null }) => useSettings(undefined, init),
+      { initialProps: { init: null } }
+    );
+    expect(result.current.settings).toEqual(DEFAULT_SETTINGS);
+
+    rerender({ init: { wpm: 550 } });
+
+    expect(result.current.settings.wpm).toBe(550);
+    expect(result.current.settings.chunkSize).toBe(DEFAULT_SETTINGS.chunkSize);
+  });
+
+  it('a later change to initial does not clobber a setting the user already edited (read-once guard)', () => {
+    const { result, rerender } = renderHook(
+      ({ init }: { init: Partial<ReaderSettings> | null }) => useSettings(undefined, init),
+      { initialProps: { init: null } }
+    );
+
+    rerender({ init: { wpm: 550 } });
+    expect(result.current.settings.wpm).toBe(550);
+
+    act(() => {
+      result.current.updateSetting('wpm', 720);
+    });
+    expect(result.current.settings.wpm).toBe(720);
+
+    rerender({ init: { wpm: 900 } });
+
+    expect(result.current.settings.wpm).toBe(720);
   });
 });
 

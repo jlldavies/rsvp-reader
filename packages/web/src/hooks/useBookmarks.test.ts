@@ -151,3 +151,13 @@ describe('useBookmarks — persistence across hook instances', () => {
     expect(result2.current.getLastPosition('doc-abc')).toBe(88);
   });
 });
+
+describe('useBookmarks — referential stability', () => {
+  it('returns the same object across unrelated re-renders, so effects keyed on it do not re-fire', () => {
+    const { result, rerender } = renderHook(() => useBookmarks());
+    const first = result.current;
+    rerender();
+    rerender();
+    expect(result.current).toBe(first);
+  });
+});

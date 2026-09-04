@@ -1,6 +1,7 @@
 import { config as loadEnv } from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { createRequire } from 'node:module';
 
 // Load env before any module reads process.env.
 // Priority: RSVP_ENV_FILE override → repo's server/.env → cwd/.env
@@ -21,20 +22,18 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { readFile } from 'fs/promises';
 import { parseText, parseMarkdown } from '@rsvp-reader/core';
-import { parseSpeedReadInput, validateWpm, validateChunkSize } from './tools.js';
-import { storeDocument } from './doc-store.js';
-import { ensureServerRunning } from './web-server.js';
-import { buildReaderUrl } from './tools.js';
+import { parseSpeedReadInput, validateWpm, validateChunkSize, parseToDocument, sourceRefFor } from './tools.js';
 import { generateArtifact } from './artifact-template.js';
-import open from 'open';
-import { parsePdf } from './parsers/pdf-parser.js';
-import { parseDocx } from './parsers/docx-parser.js';
-import { parsePptx } from './parsers/pptx-parser.js';
-import { parseUrl } from './parsers/url-parser.js';
+import { present, clipboardStandaloneMessage } from './present.js';
+
+// Read our own version from package.json (dist/index.js -> ../package.json)
+// rather than duplicating it as a literal that drifts from the published version.
+const require = createRequire(import.meta.url);
+const { version: packageVersion } = require('../package.json') as { version: string };
 
 const server = new McpServer({
   name: 'rsvp-reader',
-  version: '1.0.0',
+  version: packageVersion,
 });
 
 // ─── speed_read tool ──────────────────────────────────────────────────────────
@@ -53,60 +52,9 @@ server.tool(
     const resolvedWpm = validateWpm(wpm);
     const resolvedChunkSize = validateChunkSize(chunk_size);
 
-    // Start the web server in parallel with parsing so it's ready when we need it
-    const serverPromise = ensureServerRunning();
-    // If parsing below throws before we await this, swallow the rejection here so
-    // a slow/failed server start can't surface as a fatal unhandledRejection and
-    // kill the stdio process. When we DO await it, errors still propagate normally.
-    serverPromise.catch(() => {});
+    const doc = await parseToDocument(input);
 
-    let doc;
-
-    if (input.type === 'text') {
-      doc = await parseText(input.content, 'mcp://text');
-    } else if (input.type === 'url') {
-      const res = await fetch(input.content, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RSVP-Reader/1.0)' },
-      });
-      if (!res.ok) throw new Error(`Failed to fetch URL: ${res.status} ${input.content}`);
-      const html = await res.text();
-      doc = await parseUrl(html, input.content);
-    } else {
-      // File: read and parse based on format
-      const buffer = await readFile(input.content);
-      const fmt = input.format;
-      if (fmt === 'md') {
-        doc = await parseMarkdown(buffer.toString('utf-8'), input.content);
-      } else if (fmt === 'txt') {
-        doc = await parseText(buffer.toString('utf-8'), input.content);
-      } else if (fmt === 'pdf') {
-        doc = await parsePdf(buffer, input.content);
-      } else if (fmt === 'docx') {
-        doc = await parseDocx(buffer, input.content);
-      } else if (fmt === 'pptx') {
-        doc = await parsePptx(buffer, input.content);
-      } else {
-        throw new Error(`Unsupported file format: ${fmt}`);
-      }
-    }
-
-    if (!doc) throw new Error('Failed to parse document');
-
-    const port = await serverPromise;
-    storeDocument(doc, resolvedWpm, resolvedChunkSize);
-    const readerUrl = buildReaderUrl(port, doc.id);
-
-    // Open browser
-    await open(readerUrl);
-
-    return {
-      content: [
-        {
-          type: 'text' as const,
-          text: `Opening RSVP reader for "${doc.title}" (${doc.totalWords} words) at ${resolvedWpm} WPM.\n\nURL: ${readerUrl}`,
-        },
-      ],
-    };
+    return present(doc, resolvedWpm, resolvedChunkSize, sourceRefFor(input));
   }
 );
 
@@ -143,24 +91,9 @@ server.tool(
   },
   async ({ text, wpm }) => {
     const resolvedWpm = validateWpm(wpm);
-    const serverPromise = ensureServerRunning();
-    serverPromise.catch(() => {}); // see speed_read: guard against fatal unhandledRejection
     const doc = await parseText(text.trim(), 'mcp://clipboard');
 
-    const port = await serverPromise;
-    storeDocument(doc, resolvedWpm, 1);
-    const readerUrl = buildReaderUrl(port, doc.id);
-
-    await open(readerUrl);
-
-    return {
-      content: [
-        {
-          type: 'text' as const,
-          text: `Opening RSVP reader for clipboard text (${doc.totalWords} words) at ${resolvedWpm} WPM.\n\nURL: ${readerUrl}`,
-        },
-      ],
-    };
+    return present(doc, resolvedWpm, 1, 'mcp://clipboard', clipboardStandaloneMessage);
   }
 );
 

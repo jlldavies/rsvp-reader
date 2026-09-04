@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import type { RsvpDocument } from '@rsvp-reader/core';
 import { parseMarkdown } from '@rsvp-reader/core';
 import { useReaderStore } from './stores/reader-store';
@@ -8,6 +8,7 @@ import { useBookmarks } from './hooks/useBookmarks';
 import { useSettings } from './hooks/useSettings';
 import { useTheme } from './hooks/useTheme';
 import { useMcpDoc } from './hooks/useMcpDoc';
+import { useHostBridge } from './hooks/useHostBridge';
 import { RsvpDisplay } from './components/RsvpDisplay';
 import { ControlBar } from './components/ControlBar';
 import { ProgressBar } from './components/ProgressBar';
@@ -23,13 +24,19 @@ type Panel = 'none' | 'settings' | 'bookmarks' | 'history';
 export const App: React.FC = () => {
   const { document, engineState, progress } = useReaderStore();
   const player = useRsvpPlayer();
-  const { settings, updateSetting, resetSettings } = useSettings();
+  const bridge = useHostBridge();
+  const { settings, updateSetting, resetSettings } = useSettings(
+    bridge.hosted ? (s) => bridge.send({ type: 'rsvp:settings', settings: s }) : undefined,
+    bridge.init?.settings
+  );
   useTheme();
   const bookmarks = useBookmarks();
   const [activePanel, setActivePanel] = useState<Panel>('none');
   const [showImportHistory, setShowImportHistory] = useState(false);
   const [summarizing, setSummarizing] = useState(false);
   const [summarizeError, setSummarizeError] = useState<string | null>(null);
+  const lastProgressSentRef = useRef(0);
+  const finishedSentForDocRef = useRef<string | null>(null);
 
   const cycleTheme = useCallback(() => {
     const order = ['system', 'light', 'dark'] as const;
@@ -48,17 +55,21 @@ export const App: React.FC = () => {
 
   // Auto-load document when opened via MCP or extension
   useEffect(() => {
+    if (!bridge.ready) return;
     if (mcpDoc.doc && !document) {
       if (mcpDoc.wpm !== settings.wpm) updateSetting('wpm', mcpDoc.wpm);
       if (mcpDoc.chunkSize !== settings.chunkSize) updateSetting('chunkSize', mcpDoc.chunkSize);
       bookmarks.saveToHistory(mcpDoc.doc);
-      const lastPos = bookmarks.getLastPosition(mcpDoc.doc.id);
+      const lastPos =
+        bridge.hosted && bridge.init?.position != null
+          ? bridge.init.position
+          : bookmarks.getLastPosition(mcpDoc.doc.id);
       player.loadDocument(mcpDoc.doc, lastPos ?? undefined);
       player.play();
     }
-  // Only run once when mcpDoc resolves
+  // Only run once when mcpDoc resolves (and once bridge becomes ready)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mcpDoc.doc]);
+  }, [mcpDoc.doc, bridge.ready]);
 
   useKeyboard({
     toggle: player.toggle,
@@ -88,8 +99,86 @@ export const App: React.FC = () => {
     if (document && engineState === 'paused') {
       const tokenIndex = Math.round(progress * document.totalWords);
       bookmarks.saveProgress(document, tokenIndex);
+      if (bridge.hosted) {
+        lastProgressSentRef.current = Date.now();
+        bridge.send({
+          type: 'rsvp:progress',
+          docId: document.id,
+          tokenIndex,
+          totalWords: document.totalWords,
+          state: 'paused',
+        });
+      }
     }
-  }, [engineState, document, progress, bookmarks]);
+    // bridge.send/bridge.hosted rather than the whole bridge object: bridge
+    // is otherwise a plausible source of unrelated re-runs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engineState, document, progress, bookmarks, bridge.hosted, bridge.send]);
+
+  // Notify the host once a document is loaded
+  useEffect(() => {
+    if (bridge.hosted && document) {
+      bridge.send({
+        type: 'rsvp:opened',
+        docId: document.id,
+        title: document.title,
+        totalWords: document.totalWords,
+      });
+    }
+  // Only re-fire when the loaded document itself changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [document?.id]);
+
+  // Throttled progress reports to the host while playing (at most once per 5s)
+  useEffect(() => {
+    if (!bridge.hosted || !document || engineState !== 'playing') return;
+    const now = Date.now();
+    if (now - lastProgressSentRef.current < 5000) return;
+    lastProgressSentRef.current = now;
+    const tokenIndex = Math.round(progress * document.totalWords);
+    bridge.send({
+      type: 'rsvp:progress',
+      docId: document.id,
+      tokenIndex,
+      totalWords: document.totalWords,
+      state: 'playing',
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progress, engineState, document, bridge.hosted, bridge.send]);
+
+  // Report progress on pagehide so the host can persist the last position
+  useEffect(() => {
+    if (!bridge.hosted) return;
+    const handlePageHide = () => {
+      if (!document) return;
+      const tokenIndex = Math.round(progress * document.totalWords);
+      const state = engineState === 'playing' ? 'playing' : engineState === 'finished' ? 'finished' : 'paused';
+      bridge.send({
+        type: 'rsvp:progress',
+        docId: document.id,
+        tokenIndex,
+        totalWords: document.totalWords,
+        state,
+      });
+    };
+    window.addEventListener('pagehide', handlePageHide);
+    return () => window.removeEventListener('pagehide', handlePageHide);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bridge.hosted, bridge.send, document, progress, engineState]);
+
+  // Notify the host when the engine reaches 'finished' — once per document,
+  // even if this effect happens to re-run again while still finished.
+  useEffect(() => {
+    if (
+      bridge.hosted &&
+      document &&
+      engineState === 'finished' &&
+      finishedSentForDocRef.current !== document.id
+    ) {
+      finishedSentForDocRef.current = document.id;
+      bridge.send({ type: 'rsvp:finished', docId: document.id, totalWords: document.totalWords });
+    }
+  }, [engineState, document, bridge.hosted, bridge.send]);
 
   const handleSeek = useCallback(
     (tokenIndex: number) => {

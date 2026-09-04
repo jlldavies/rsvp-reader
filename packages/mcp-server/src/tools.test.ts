@@ -1,9 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { mkdtempSync, writeFileSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import {
   parseSpeedReadInput,
   buildReaderUrl,
   validateWpm,
   validateChunkSize,
+  parseToDocument,
+  sourceRefFor,
 } from './tools';
 import { generateArtifact, type ArtifactSection } from './artifact-template';
 
@@ -64,6 +69,46 @@ describe('parseSpeedReadInput — validation', () => {
 
   it('throws when text is only whitespace', () => {
     expect(() => parseSpeedReadInput({ text: '   ' })).toThrow();
+  });
+});
+
+describe('parseToDocument', () => {
+  it('parses text input into an RsvpDocument', async () => {
+    const doc = await parseToDocument({ type: 'text', content: 'Hello world. This is a test.' });
+    expect(doc.totalWords).toBeGreaterThan(0);
+    expect(doc.source.type).toBe('text');
+  });
+
+  describe('file input', () => {
+    let dir: string;
+
+    beforeEach(() => {
+      dir = mkdtempSync(join(tmpdir(), 'rsvp-tools-test-'));
+    });
+
+    afterEach(() => {
+      rmSync(dir, { recursive: true, force: true });
+    });
+
+    it('parses a .txt file', async () => {
+      const filePath = join(dir, 'sample.txt');
+      writeFileSync(filePath, 'Plain text content for the reader to parse.');
+
+      const doc = await parseToDocument({ type: 'file', content: filePath, format: 'txt' });
+
+      expect(doc.totalWords).toBeGreaterThan(0);
+      expect(doc.source.type).toBe('text');
+    });
+
+    it('parses a .md file', async () => {
+      const filePath = join(dir, 'sample.md');
+      writeFileSync(filePath, '# Heading\n\nSome **markdown** body text.');
+
+      const doc = await parseToDocument({ type: 'file', content: filePath, format: 'md' });
+
+      expect(doc.totalWords).toBeGreaterThan(0);
+      expect(doc.source.type).toBe('markdown');
+    });
   });
 });
 
@@ -229,5 +274,16 @@ describe('generateArtifact — phantom context matches engine', () => {
     expect(html).toMatch(/for\s*\(var b=i-1;[^)]*\)\s*\{\s*var tb = tokens\[b\];\s*if\s*\(isSentEnd\(tb\)\)\s*break/);
     // Forward walk includes the sentence-ending token then breaks
     expect(html).toMatch(/afterParts\.push\(ta\.text\);\s*if\s*\(isSentEnd\(ta\)\)\s*break/);
+  });
+});
+
+describe('sourceRefFor', () => {
+  it('never puts the pasted body into the ref — a stable URI stands in for it', () => {
+    expect(sourceRefFor({ type: 'text', content: 'the whole document body' })).toBe('mcp://text');
+  });
+
+  it('passes a URL or a file path through as the ref', () => {
+    expect(sourceRefFor({ type: 'url', content: 'https://example.com/a' })).toBe('https://example.com/a');
+    expect(sourceRefFor({ type: 'file', content: 'C:\docs\brief.md', format: 'md' })).toBe('C:\docs\brief.md');
   });
 });
